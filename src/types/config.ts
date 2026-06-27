@@ -11,11 +11,17 @@ export interface QuotaExceededConfig {
   antigravityCredits?: boolean;
 }
 
+export interface PrivacyConfig {
+  ipMasquerade?: boolean;
+  deviceMasquerade?: boolean;
+}
+
 export interface Config {
   debug?: boolean;
   proxyUrl?: string;
   requestRetry?: number;
   quotaExceeded?: QuotaExceededConfig;
+  privacy?: PrivacyConfig;
   requestLog?: boolean;
   loggingToFile?: boolean;
   logsMaxTotalSizeMb?: number;
@@ -37,6 +43,7 @@ export type RawConfigSection =
   | 'proxy-url'
   | 'request-retry'
   | 'quota-exceeded'
+  | 'privacy'
   | 'request-log'
   | 'logging-to-file'
   | 'logs-max-total-size-mb'

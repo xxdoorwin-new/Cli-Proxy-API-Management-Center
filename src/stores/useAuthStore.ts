@@ -5,11 +5,19 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import type { AuthState, LoginCredentials, ConnectionStatus, ServerRuntimeKind } from '@/types';
+import type {
+  AuthState,
+  LoginCredentials,
+  ConnectionStatus,
+  ServerRuntimeKind,
+  UserLoginCredentials,
+  UserRegistrationRequest,
+} from '@/types';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { obfuscatedStorage } from '@/services/storage/secureStorage';
 import { apiClient } from '@/services/api/client';
 import { versionApi } from '@/services/api/version';
+import { userSessionApi } from '@/services/api/userManagement';
 import { useConfigStore } from './useConfigStore';
 import { useModelsStore } from './useModelsStore';
 import { detectApiBaseFromLocation, normalizeApiBase } from '@/utils/connection';
@@ -20,6 +28,8 @@ interface AuthStoreState extends AuthState {
 
   // 操作
   login: (credentials: LoginCredentials) => Promise<void>;
+  userLogin: (credentials: UserLoginCredentials) => Promise<void>;
+  registerUser: (request: UserRegistrationRequest) => Promise<void>;
   logout: () => void;
   checkAuth: () => Promise<boolean>;
   restoreSession: () => Promise<boolean>;
@@ -49,8 +59,11 @@ export const useAuthStore = create<AuthStoreState>()(
     (set, get) => ({
       // 初始状态
       isAuthenticated: false,
+      authMode: null,
       apiBase: '',
       managementKey: '',
+      userSessionToken: '',
+      currentUser: null,
       rememberPassword: false,
       serverVersion: null,
       serverBuildDate: null,
@@ -72,25 +85,38 @@ export const useAuthStore = create<AuthStoreState>()(
             obfuscatedStorage.getItem<string>('apiUrl', { encrypt: true });
           const legacyKey = obfuscatedStorage.getItem<string>('managementKey');
 
-          const { apiBase, managementKey, rememberPassword } = get();
+          const { apiBase, managementKey, userSessionToken, rememberPassword, authMode } = get();
           const resolvedBase = normalizeApiBase(apiBase || legacyBase || detectApiBaseFromLocation());
           const resolvedKey = managementKey || legacyKey || '';
+          const resolvedUserSessionToken = userSessionToken || '';
           const resolvedRememberPassword = rememberPassword || Boolean(managementKey) || Boolean(legacyKey);
 
           set({
             apiBase: resolvedBase,
             managementKey: resolvedKey,
+            userSessionToken: resolvedUserSessionToken,
             rememberPassword: resolvedRememberPassword
           });
-          apiClient.setConfig({ apiBase: resolvedBase, managementKey: resolvedKey });
+          apiClient.setConfig({
+            apiBase: resolvedBase,
+            managementKey: resolvedKey,
+            userSessionToken: resolvedUserSessionToken,
+          });
 
-          if (wasLoggedIn && resolvedBase && resolvedKey) {
+          if (wasLoggedIn && resolvedBase && (resolvedKey || resolvedUserSessionToken)) {
             try {
-              await get().login({
-                apiBase: resolvedBase,
-                managementKey: resolvedKey,
-                rememberPassword: resolvedRememberPassword
-              });
+              if (authMode === 'user' && resolvedUserSessionToken) {
+                const ok = await get().checkAuth();
+                return ok;
+              }
+              if (resolvedKey) {
+                await get().login({
+                  apiBase: resolvedBase,
+                  managementKey: resolvedKey,
+                  rememberPassword: resolvedRememberPassword
+                });
+                return true;
+              }
               return true;
             } catch (error) {
               console.warn('Auto login failed:', error);
@@ -123,7 +149,8 @@ export const useAuthStore = create<AuthStoreState>()(
           // 配置 API 客户端
           apiClient.setConfig({
             apiBase,
-            managementKey
+            managementKey,
+            userSessionToken: ''
           });
 
           // 测试连接 - 获取配置
@@ -133,8 +160,11 @@ export const useAuthStore = create<AuthStoreState>()(
           // 登录成功
           set({
             isAuthenticated: true,
+            authMode: 'management',
             apiBase,
             managementKey,
+            userSessionToken: '',
+            currentUser: null,
             rememberPassword,
             connectionStatus: 'connected',
             connectionError: null,
@@ -160,15 +190,85 @@ export const useAuthStore = create<AuthStoreState>()(
         }
       },
 
+      userLogin: async (credentials) => {
+        const apiBase = normalizeApiBase(credentials.apiBase);
+        const rememberPassword = credentials.rememberPassword ?? get().rememberPassword ?? false;
+
+        try {
+          set({
+            connectionStatus: 'connecting',
+            serverVersion: null,
+            serverBuildDate: null,
+            serverRuntimeKind: 'unknown',
+            supportsPlugin: false
+          });
+          useModelsStore.getState().clearCache();
+          apiClient.setConfig({ apiBase, managementKey: '', userSessionToken: '' });
+
+          const { session } = await userSessionApi.login(credentials.identity, credentials.password);
+          const token = session.token || '';
+          apiClient.setConfig({ apiBase, managementKey: '', userSessionToken: token });
+          const runtimeKind = await detectRuntimeKind();
+
+          set({
+            isAuthenticated: true,
+            authMode: 'user',
+            apiBase,
+            managementKey: '',
+            userSessionToken: token,
+            currentUser: session.user,
+            rememberPassword,
+            connectionStatus: 'connected',
+            connectionError: null,
+            ...(runtimeKind !== 'unknown' ? { serverRuntimeKind: runtimeKind } : {})
+          });
+          if (rememberPassword) {
+            localStorage.setItem('isLoggedIn', 'true');
+          } else {
+            localStorage.removeItem('isLoggedIn');
+          }
+        } catch (error: unknown) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : typeof error === 'string'
+                ? error
+                : 'Connection failed';
+          set({
+            connectionStatus: 'error',
+            connectionError: message || 'Connection failed'
+          });
+          throw error;
+        }
+      },
+
+      registerUser: async (request) => {
+        const apiBase = normalizeApiBase(request.apiBase);
+        apiClient.setConfig({ apiBase, managementKey: '', userSessionToken: '' });
+        await userSessionApi.register({
+          username: request.username,
+          email: request.email,
+          password: request.password,
+          display_name: request.display_name,
+        });
+      },
+
       // 登出
       logout: () => {
+        const { authMode, userSessionToken, apiBase } = get();
+        if (authMode === 'user' && userSessionToken && apiBase) {
+          userSessionApi.logout().catch(() => undefined);
+        }
         restoreSessionPromise = null;
         useConfigStore.getState().clearCache();
         useModelsStore.getState().clearCache();
         set({
           isAuthenticated: false,
+          authMode: null,
           apiBase: '',
           managementKey: '',
+          userSessionToken: '',
+          currentUser: null,
           serverVersion: null,
           serverBuildDate: null,
           serverRuntimeKind: 'unknown',
@@ -181,23 +281,36 @@ export const useAuthStore = create<AuthStoreState>()(
 
       // 检查认证状态
       checkAuth: async () => {
-        const { managementKey, apiBase } = get();
+        const { managementKey, userSessionToken, apiBase, authMode } = get();
 
-        if (!managementKey || !apiBase) {
+        if ((!managementKey && !userSessionToken) || !apiBase) {
           return false;
         }
 
         try {
           // 重新配置客户端
-          apiClient.setConfig({ apiBase, managementKey });
+          apiClient.setConfig({ apiBase, managementKey, userSessionToken });
           set({ supportsPlugin: false });
 
-          // 验证连接
+          if (authMode === 'user' || (!managementKey && userSessionToken)) {
+            const { session } = await userSessionApi.session();
+            const runtimeKind = await detectRuntimeKind();
+            set({
+              isAuthenticated: true,
+              authMode: 'user',
+              currentUser: session.user,
+              connectionStatus: 'connected',
+              ...(runtimeKind !== 'unknown' ? { serverRuntimeKind: runtimeKind } : {})
+            });
+            return true;
+          }
+
           await useConfigStore.getState().fetchConfig();
           const runtimeKind = await detectRuntimeKind();
 
           set({
             isAuthenticated: true,
+            authMode: 'management',
             connectionStatus: 'connected',
             ...(runtimeKind !== 'unknown' ? { serverRuntimeKind: runtimeKind } : {})
           });
@@ -253,8 +366,11 @@ export const useAuthStore = create<AuthStoreState>()(
         }
       })),
       partialize: (state) => ({
+        authMode: state.authMode,
         apiBase: state.apiBase,
         ...(state.rememberPassword ? { managementKey: state.managementKey } : {}),
+        ...(state.rememberPassword ? { userSessionToken: state.userSessionToken } : {}),
+        currentUser: state.currentUser,
         rememberPassword: state.rememberPassword,
         serverVersion: state.serverVersion,
         serverBuildDate: state.serverBuildDate,

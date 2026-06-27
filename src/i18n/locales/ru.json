@@ -947,6 +947,11 @@
         "headers": {
           "title": "Заголовки по умолчанию",
           "description": "Заголовки по умолчанию для OAuth-запросов Claude и Codex, когда клиент их не отправил",
+          "privacy_title": "Маскировка приватности",
+          "ip_masquerade": "Включить маскировку IP",
+          "ip_masquerade_desc": "Удалять X-Forwarded-For, X-Real-IP, Forwarded, Via и похожие заголовки, раскрывающие адрес downstream-клиента",
+          "device_masquerade": "Включить маскировку устройства",
+          "device_masquerade_desc": "Стабилизировать UA/device fingerprint в формате каждого upstream-агента: Claude Code для Claude и стиль Codex для Codex",
           "claude_title": "Claude Header Defaults",
           "codex_title": "Codex Header Defaults",
           "user_agent": "User-Agent",

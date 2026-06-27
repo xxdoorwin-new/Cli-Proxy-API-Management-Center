@@ -398,6 +398,7 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
   };
 
   const rateWindows = pickClassifiedWindows(rateLimit);
+  const mainWindowsStartIdx = windows.length;
   addWindow(
     WINDOW_META.codeFiveHour.id,
     t(WINDOW_META.codeFiveHour.labelKey),
@@ -421,6 +422,32 @@ const buildCodexQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Codex
     rawLimitReached,
     rawAllowed
   );
+
+  // Fallback: rateLimit exists (API responded with rate limit info) but returned no window
+  // objects (e.g. API format changed or usage is below reporting threshold). Still render the
+  // expected 5-hour and weekly window rows so the user can see the labels and limit status.
+  if (rateLimit != null && windows.length === mainWindowsStartIdx) {
+    const isLimitReached = Boolean(rawLimitReached) || rawAllowed === false;
+    const fallbackUsedPercent = isLimitReached ? 100 : null;
+    windows.push(
+      {
+        id: WINDOW_META.codeFiveHour.id,
+        label: t(WINDOW_META.codeFiveHour.labelKey),
+        labelKey: WINDOW_META.codeFiveHour.labelKey,
+        labelParams: undefined,
+        usedPercent: fallbackUsedPercent,
+        resetLabel: '-',
+      },
+      {
+        id: WINDOW_META.codeWeekly.id,
+        label: t(WINDOW_META.codeWeekly.labelKey),
+        labelKey: WINDOW_META.codeWeekly.labelKey,
+        labelParams: undefined,
+        usedPercent: fallbackUsedPercent,
+        resetLabel: '-',
+      }
+    );
+  }
 
   const codeReviewWindows = pickClassifiedWindows(codeReviewLimit);
   const codeReviewLimitReached = codeReviewLimit?.limit_reached ?? codeReviewLimit?.limitReached;

@@ -10,11 +10,46 @@ export interface LoginCredentials {
   rememberPassword?: boolean;
 }
 
+export interface UserLoginCredentials {
+  apiBase: string;
+  identity: string;
+  password: string;
+  rememberPassword?: boolean;
+}
+
+export interface UserRegistrationRequest {
+  apiBase: string;
+  username: string;
+  email: string;
+  password: string;
+  display_name?: string;
+}
+
+export interface UserPrincipal {
+  id: string;
+  username: string;
+  email: string;
+  display_name?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'suspended' | string;
+  role: 'user' | 'admin' | string;
+}
+
+export interface UserSession {
+  token?: string;
+  expires_at?: string;
+  user: UserPrincipal;
+}
+
+export type AuthMode = 'management' | 'user' | null;
+
 // 认证状态
 export interface AuthState {
   isAuthenticated: boolean;
+  authMode: AuthMode;
   apiBase: string;
   managementKey: string;
+  userSessionToken: string;
+  currentUser: UserPrincipal | null;
   rememberPassword: boolean;
   serverVersion: string | null;
   serverBuildDate: string | null;

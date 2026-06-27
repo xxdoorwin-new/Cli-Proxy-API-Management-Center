@@ -12,7 +12,16 @@ import { PluginStorePage } from '@/features/plugins/PluginStorePage';
 import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
+import { UserDashboardPage } from '@/pages/UserDashboardPage';
+import { UserManagementPage } from '@/pages/UserManagementPage';
 import { useAuthStore } from '@/stores';
+
+const createUserRoutes = () => [
+  { path: '/', element: <UserDashboardPage /> },
+  { path: '/dashboard', element: <UserDashboardPage /> },
+  { path: '/user-dashboard', element: <UserDashboardPage /> },
+  { path: '*', element: <Navigate to="/" replace /> },
+];
 
 const createMainRoutes = (supportsPlugin: boolean) => [
   { path: '/', element: <DashboardPage /> },
@@ -40,11 +49,15 @@ const createMainRoutes = (supportsPlugin: boolean) => [
       ]),
   { path: '/config', element: <ConfigPage /> },
   { path: '/logs', element: <LogsPage /> },
+  { path: '/users', element: <UserManagementPage /> },
   { path: '/system', element: <SystemPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 
 export function MainRoutes({ location }: { location?: Location }) {
   const supportsPlugin = useAuthStore((state) => state.supportsPlugin);
-  return useRoutes(createMainRoutes(supportsPlugin), location);
+  const authMode = useAuthStore((state) => state.authMode);
+  const currentUser = useAuthStore((state) => state.currentUser);
+  const userOnly = authMode === 'user' && currentUser?.role !== 'admin';
+  return useRoutes(userOnly ? createUserRoutes() : createMainRoutes(supportsPlugin), location);
 }

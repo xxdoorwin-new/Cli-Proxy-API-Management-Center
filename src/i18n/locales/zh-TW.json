@@ -986,6 +986,11 @@
         "headers": {
           "title": "Header 預設值",
           "description": "Claude 與 Codex OAuth 請求在客戶端缺少 Header 時使用的預設值",
+          "privacy_title": "隱私偽裝",
+          "ip_masquerade": "開啟 IP 偽裝",
+          "ip_masquerade_desc": "移除 X-Forwarded-For、X-Real-IP、Forwarded、Via 等會暴露下游客戶端位址的 Header",
+          "device_masquerade": "開啟裝置偽裝",
+          "device_masquerade_desc": "依上游智能體格式穩定 UA/device 指紋，例如 Claude 使用 Claude Code 風格，Codex 使用 Codex 風格",
           "claude_title": "Claude Header Defaults",
           "codex_title": "Codex Header Defaults",
           "user_agent": "User-Agent",

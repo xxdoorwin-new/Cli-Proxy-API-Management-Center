@@ -263,9 +263,7 @@ export function VisualConfigEditor({
     handledJumpRef.current = jumpRequest; // handle each request once, even if deps re-fire
     const { fieldId, sectionId } = jumpRequest;
     const targetFieldId =
-      (fieldId === 'tlsCert' || fieldId === 'tlsKey') && !values.tlsEnable
-        ? 'tlsEnable'
-        : fieldId;
+      (fieldId === 'tlsCert' || fieldId === 'tlsKey') && !values.tlsEnable ? 'tlsEnable' : fieldId;
 
     const el = document.getElementById(configFieldDomId(targetFieldId));
     if (!el) {
@@ -1582,6 +1580,38 @@ export function VisualConfigEditor({
                   defaultOpen={false}
                 >
                   <SectionStack>
+                    <div className={styles.subsectionHeader}>
+                      <h3 className={styles.subsectionTitle}>
+                        {t('config_management.visual.sections.headers.privacy_title')}
+                      </h3>
+                    </div>
+                    <SectionGrid>
+                      <FieldAnchor fieldId="privacyIpMasquerade">
+                        <ToggleRow
+                          title={t('config_management.visual.sections.headers.ip_masquerade')}
+                          description={t(
+                            'config_management.visual.sections.headers.ip_masquerade_desc'
+                          )}
+                          checked={values.privacyIpMasquerade}
+                          disabled={disabled}
+                          onChange={(privacyIpMasquerade) => onChange({ privacyIpMasquerade })}
+                        />
+                      </FieldAnchor>
+                      <FieldAnchor fieldId="privacyDeviceMasquerade">
+                        <ToggleRow
+                          title={t('config_management.visual.sections.headers.device_masquerade')}
+                          description={t(
+                            'config_management.visual.sections.headers.device_masquerade_desc'
+                          )}
+                          checked={values.privacyDeviceMasquerade}
+                          disabled={disabled}
+                          onChange={(privacyDeviceMasquerade) =>
+                            onChange({ privacyDeviceMasquerade })
+                          }
+                        />
+                      </FieldAnchor>
+                    </SectionGrid>
+                    <Divider />
                     <div className={styles.subsectionHeader}>
                       <h3 className={styles.subsectionTitle}>
                         {t('config_management.visual.sections.headers.claude_title')}

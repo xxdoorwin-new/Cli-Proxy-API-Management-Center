@@ -108,6 +108,8 @@ export type VisualConfigValues = {
   wsAuth: boolean;
   antigravitySignatureCacheEnabled: boolean;
   antigravitySignatureBypassStrict: boolean;
+  privacyIpMasquerade: boolean;
+  privacyDeviceMasquerade: boolean;
   claudeHeaderUserAgent: string;
   claudeHeaderPackageVersion: string;
   claudeHeaderRuntimeVersion: string;
@@ -172,6 +174,8 @@ export const DEFAULT_VISUAL_VALUES: VisualConfigValues = {
   wsAuth: false,
   antigravitySignatureCacheEnabled: true,
   antigravitySignatureBypassStrict: false,
+  privacyIpMasquerade: false,
+  privacyDeviceMasquerade: false,
   claudeHeaderUserAgent: '',
   claudeHeaderPackageVersion: '',
   claudeHeaderRuntimeVersion: '',

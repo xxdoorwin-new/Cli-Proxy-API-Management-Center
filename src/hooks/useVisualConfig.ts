@@ -758,6 +758,8 @@ function getNextDirtyFields(
       'authAutoRefreshWorkers',
       'antigravitySignatureCacheEnabled',
       'antigravitySignatureBypassStrict',
+      'privacyIpMasquerade',
+      'privacyDeviceMasquerade',
       'claudeHeaderUserAgent',
       'claudeHeaderPackageVersion',
       'claudeHeaderRuntimeVersion',
@@ -944,6 +946,7 @@ export function useVisualConfig() {
       const streaming = asRecord(parsed.streaming);
       const plugins = asRecord(parsed.plugins);
       const codex = asRecord(parsed.codex);
+      const privacy = asRecord(parsed.privacy);
       const claudeHeaderDefaults = asRecord(parsed['claude-header-defaults']);
       const codexHeaderDefaults = asRecord(parsed['codex-header-defaults']);
 
@@ -1002,6 +1005,8 @@ export function useVisualConfig() {
           parsed['antigravity-signature-cache-enabled'] ?? true
         ),
         antigravitySignatureBypassStrict: Boolean(parsed['antigravity-signature-bypass-strict']),
+        privacyIpMasquerade: Boolean(privacy?.['ip-masquerade']),
+        privacyDeviceMasquerade: Boolean(privacy?.['device-masquerade']),
 
         claudeHeaderUserAgent:
           typeof claudeHeaderDefaults?.['user-agent'] === 'string'
@@ -1218,6 +1223,29 @@ export function useVisualConfig() {
           ['antigravity-signature-bypass-strict'],
           values.antigravitySignatureBypassStrict
         );
+
+        if (
+          docHas(doc, ['privacy']) ||
+          values.privacyIpMasquerade ||
+          values.privacyDeviceMasquerade ||
+          shouldWriteManagedField(
+            doc,
+            ['privacy', 'ip-masquerade'],
+            dirtyFields,
+            'privacyIpMasquerade'
+          ) ||
+          shouldWriteManagedField(
+            doc,
+            ['privacy', 'device-masquerade'],
+            dirtyFields,
+            'privacyDeviceMasquerade'
+          )
+        ) {
+          ensureMapInDoc(doc, ['privacy']);
+          setBooleanInDoc(doc, ['privacy', 'ip-masquerade'], values.privacyIpMasquerade);
+          setBooleanInDoc(doc, ['privacy', 'device-masquerade'], values.privacyDeviceMasquerade);
+          deleteIfMapEmpty(doc, ['privacy']);
+        }
 
         if (
           docHas(doc, ['claude-header-defaults']) ||

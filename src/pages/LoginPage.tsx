@@ -90,13 +90,21 @@ export function LoginPage() {
   const setLanguage = useLanguageStore((state) => state.setLanguage);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const login = useAuthStore((state) => state.login);
+  const userLogin = useAuthStore((state) => state.userLogin);
+  const registerUser = useAuthStore((state) => state.registerUser);
   const restoreSession = useAuthStore((state) => state.restoreSession);
   const storedBase = useAuthStore((state) => state.apiBase);
   const storedKey = useAuthStore((state) => state.managementKey);
   const storedRememberPassword = useAuthStore((state) => state.rememberPassword);
 
   const [apiBase, setApiBase] = useState('');
+  const [mode, setMode] = useState<'management' | 'user' | 'register'>('management');
   const [managementKey, setManagementKey] = useState('');
+  const [identity, setIdentity] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [userPassword, setUserPassword] = useState('');
   const [showCustomBase, setShowCustomBase] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [rememberPassword, setRememberPassword] = useState(false);
@@ -151,7 +159,15 @@ export function LoginPage() {
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!managementKey.trim()) {
+    if (mode === 'management' && !managementKey.trim()) {
+      setError(t('login.error_required'));
+      return;
+    }
+    if (mode === 'user' && (!identity.trim() || !userPassword.trim())) {
+      setError(t('login.error_required'));
+      return;
+    }
+    if (mode === 'register' && (!username.trim() || !email.trim() || !userPassword.trim())) {
       setError(t('login.error_required'));
       return;
     }
@@ -160,6 +176,30 @@ export function LoginPage() {
     setLoading(true);
     setError('');
     try {
+      if (mode === 'user') {
+        await userLogin({
+          apiBase: baseToUse,
+          identity: identity.trim(),
+          password: userPassword,
+          rememberPassword
+        });
+        showNotification(t('common.connected_status'), 'success');
+        navigate('/', { replace: true });
+        return;
+      }
+      if (mode === 'register') {
+        await registerUser({
+          apiBase: baseToUse,
+          username: username.trim(),
+          email: email.trim(),
+          password: userPassword,
+          display_name: displayName.trim() || undefined
+        });
+        showNotification(t('login.registration_submitted', { defaultValue: '注册申请已提交' }), 'success');
+        setMode('user');
+        setIdentity(username.trim() || email.trim());
+        return;
+      }
       await login({
         apiBase: baseToUse,
         managementKey: managementKey.trim(),
@@ -174,7 +214,24 @@ export function LoginPage() {
     } finally {
       setLoading(false);
     }
-  }, [apiBase, detectedBase, login, managementKey, navigate, rememberPassword, showNotification, t]);
+  }, [
+    apiBase,
+    detectedBase,
+    displayName,
+    email,
+    identity,
+    login,
+    managementKey,
+    mode,
+    navigate,
+    registerUser,
+    rememberPassword,
+    showNotification,
+    t,
+    userLogin,
+    userPassword,
+    username,
+  ]);
 
   const handleSubmitKeyDown = useCallback(
     (event: React.KeyboardEvent) => {
@@ -240,6 +297,26 @@ export function LoginPage() {
                 <div className={styles.subtitle}>{t('login.subtitle')}</div>
               </div>
 
+              <div className={styles.modeTabs}>
+                {[
+                  ['management', t('login.management_mode', { defaultValue: '管理密钥' })],
+                  ['user', t('login.user_mode', { defaultValue: '用户登录' })],
+                  ['register', t('login.register_mode', { defaultValue: '用户注册' })],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={`${styles.modeTab} ${mode === value ? styles.modeTabActive : ''}`}
+                    onClick={() => {
+                      setMode(value as 'management' | 'user' | 'register');
+                      setError('');
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
               <div className={styles.connectionBox}>
                 <div className={styles.label}>{t('login.connection_current')}</div>
                 <div className={styles.value}>{apiBase || detectedBase}</div>
@@ -266,36 +343,101 @@ export function LoginPage() {
                 />
               )}
 
-              <Input
-                autoFocus
-                label={t('login.management_key_label')}
-                placeholder={t('login.management_key_placeholder')}
-                type={showKey ? 'text' : 'password'}
-                name="cpa-management-key"
-                autoComplete="current-password"
-                value={managementKey}
-                onChange={(e) => setManagementKey(e.target.value)}
-                onKeyDown={handleSubmitKeyDown}
-                rightElement={
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setShowKey((prev) => !prev)}
-                    aria-label={
-                      showKey
-                        ? t('login.hide_key', { defaultValue: '隐藏密钥' })
-                        : t('login.show_key', { defaultValue: '显示密钥' })
+              {mode === 'management' ? (
+                <Input
+                  autoFocus
+                  label={t('login.management_key_label')}
+                  placeholder={t('login.management_key_placeholder')}
+                  type={showKey ? 'text' : 'password'}
+                  name="cpa-management-key"
+                  autoComplete="current-password"
+                  value={managementKey}
+                  onChange={(e) => setManagementKey(e.target.value)}
+                  onKeyDown={handleSubmitKeyDown}
+                  rightElement={
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => setShowKey((prev) => !prev)}
+                      aria-label={
+                        showKey
+                          ? t('login.hide_key', { defaultValue: '隐藏密钥' })
+                          : t('login.show_key', { defaultValue: '显示密钥' })
+                      }
+                      title={
+                        showKey
+                          ? t('login.hide_key', { defaultValue: '隐藏密钥' })
+                          : t('login.show_key', { defaultValue: '显示密钥' })
+                      }
+                    >
+                      {showKey ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+                    </button>
+                  }
+                />
+              ) : (
+                <>
+                  {mode === 'register' && (
+                    <>
+                      <Input
+                        autoFocus
+                        label={t('login.username_label', { defaultValue: '用户名' })}
+                        placeholder={t('login.username_placeholder', { defaultValue: '请输入用户名' })}
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                      />
+                      <Input
+                        label={t('login.email_label', { defaultValue: '邮箱' })}
+                        placeholder={t('login.email_placeholder', { defaultValue: '请输入邮箱' })}
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                      <Input
+                        label={t('login.display_name_label', { defaultValue: '显示名称' })}
+                        placeholder={t('common.optional')}
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                      />
+                    </>
+                  )}
+                  {mode === 'user' && (
+                    <Input
+                      autoFocus
+                      label={t('login.identity_label', { defaultValue: '用户名或邮箱' })}
+                      placeholder={t('login.identity_placeholder', { defaultValue: '请输入用户名或邮箱' })}
+                      value={identity}
+                      onChange={(e) => setIdentity(e.target.value)}
+                      onKeyDown={handleSubmitKeyDown}
+                    />
+                  )}
+                  <Input
+                    label={t('login.password_label', { defaultValue: '密码' })}
+                    placeholder={t('login.password_placeholder', { defaultValue: '请输入密码' })}
+                    type={showKey ? 'text' : 'password'}
+                    value={userPassword}
+                    onChange={(e) => setUserPassword(e.target.value)}
+                    onKeyDown={handleSubmitKeyDown}
+                    rightElement={
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => setShowKey((prev) => !prev)}
+                        aria-label={
+                          showKey
+                            ? t('login.hide_key', { defaultValue: '隐藏密钥' })
+                            : t('login.show_key', { defaultValue: '显示密钥' })
+                        }
+                        title={
+                          showKey
+                            ? t('login.hide_key', { defaultValue: '隐藏密钥' })
+                            : t('login.show_key', { defaultValue: '显示密钥' })
+                        }
+                      >
+                        {showKey ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+                      </button>
                     }
-                    title={
-                      showKey
-                        ? t('login.hide_key', { defaultValue: '隐藏密钥' })
-                        : t('login.show_key', { defaultValue: '显示密钥' })
-                    }
-                  >
-                    {showKey ? <IconEyeOff size={16} /> : <IconEye size={16} />}
-                  </button>
-                }
-              />
+                  />
+                </>
+              )}
 
               <div className={styles.toggleAdvanced}>
                 <SelectionCheckbox
@@ -308,7 +450,11 @@ export function LoginPage() {
               </div>
 
               <Button fullWidth onClick={handleSubmit} loading={loading}>
-                {loading ? t('login.submitting') : t('login.submit_button')}
+                {loading
+                  ? t('login.submitting')
+                  : mode === 'register'
+                    ? t('login.register_submit', { defaultValue: '提交注册' })
+                    : t('login.submit_button')}
               </Button>
 
               {error && <div className={styles.errorBox}>{error}</div>}

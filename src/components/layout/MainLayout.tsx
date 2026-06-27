@@ -55,6 +55,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   plugins: <IconSidebarPlugins size={18} />,
   pluginStore: <IconSidebarStore size={18} />,
   config: <IconSidebarConfig size={18} />,
+  users: <IconSidebarSystem size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
 };
@@ -302,6 +303,8 @@ export function MainLayout() {
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const apiBase = useAuthStore((state) => state.apiBase);
   const supportsPlugin = useAuthStore((state) => state.supportsPlugin);
+  const authMode = useAuthStore((state) => state.authMode);
+  const currentUser = useAuthStore((state) => state.currentUser);
 
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const clearCache = useConfigStore((state) => state.clearCache);
@@ -509,7 +512,24 @@ export function MainLayout() {
       })
     : [];
 
-  const navGroups: SidebarNavGroup[] = [
+  const userOnly = authMode === 'user' && currentUser?.role !== 'admin';
+
+  const navGroups: SidebarNavGroup[] = userOnly
+    ? [
+        {
+          id: 'operate',
+          labelKey: 'nav_groups.operate',
+          items: [
+            {
+              path: '/',
+              label: 'Dashboard',
+              meta: 'Usage and quota',
+              icon: sidebarIcons.dashboard,
+            },
+          ],
+        },
+      ]
+    : [
     {
       id: 'operate',
       labelKey: 'nav_groups.operate',
@@ -573,6 +593,12 @@ export function MainLayout() {
           labelKey: 'nav.config_management',
           metaKey: 'nav_meta.config_management',
           icon: sidebarIcons.config,
+        },
+        {
+          path: '/users',
+          label: 'Users',
+          meta: 'Registration and quotas',
+          icon: sidebarIcons.users,
         },
         ...(supportsPlugin
           ? [

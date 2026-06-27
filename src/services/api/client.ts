@@ -21,8 +21,10 @@ import type { ServerRuntimeKind } from '@/types';
 
 class ApiClient {
   private instance: AxiosInstance;
+  private apiRoot: string = '';
   private apiBase: string = '';
   private managementKey: string = '';
+  private userSessionToken: string = '';
 
   constructor() {
     this.instance = axios.create({
@@ -39,8 +41,10 @@ class ApiClient {
    * 设置 API 配置
    */
   setConfig(config: ApiClientConfig): void {
+    this.apiRoot = computeApiUrl(config.apiBase).replace(/\/v0\/management$/i, '');
     this.apiBase = computeApiUrl(config.apiBase);
-    this.managementKey = config.managementKey;
+    this.managementKey = config.managementKey || '';
+    this.userSessionToken = config.userSessionToken || '';
 
     if (config.timeout) {
       this.instance.defaults.timeout = config.timeout;
@@ -113,11 +117,34 @@ class ApiClient {
         if (config.url) {
           // Normalize deprecated Gemini endpoint to the current path.
           config.url = config.url.replace(/\/generative-language-api-key\b/g, '/gemini-api-key');
+          if (/^\/v0\/(?:management|user)(?:\/|$)/.test(config.url)) {
+            config.baseURL = this.apiRoot;
+          }
+        }
+
+        const internalConfig = config as AxiosRequestConfig & {
+          __skipAuth?: boolean;
+          __skipUnauthorizedEvent?: boolean;
+        };
+        const headerBag = config.headers as
+          | (Record<string, unknown> & { get?: (name: string) => unknown; delete?: (name: string) => void })
+          | undefined;
+        const skipAuthHeader =
+          headerBag?.get?.('X-CPA-Skip-Auth') ?? headerBag?.['X-CPA-Skip-Auth'];
+        const skipAuth = String(skipAuthHeader || '').toLowerCase() === 'true';
+        if (skipAuth) {
+          internalConfig.__skipAuth = true;
+          internalConfig.__skipUnauthorizedEvent = true;
+          headerBag?.delete?.('X-CPA-Skip-Auth');
+          if (headerBag) {
+            delete headerBag['X-CPA-Skip-Auth'];
+          }
         }
 
         // 添加认证头
-        if (this.managementKey) {
-          config.headers.Authorization = `Bearer ${this.managementKey}`;
+        const bearerToken = this.managementKey || this.userSessionToken;
+        if (!skipAuth && bearerToken) {
+          config.headers.Authorization = `Bearer ${bearerToken}`;
         }
 
         return config;
@@ -186,7 +213,10 @@ class ApiClient {
       apiError.data = responseData;
 
       // 401 未授权 - 触发登出事件
-      if (error.response?.status === 401) {
+      const internalConfig = error.config as
+        | (AxiosRequestConfig & { __skipUnauthorizedEvent?: boolean })
+        | undefined;
+      if (error.response?.status === 401 && !internalConfig?.__skipUnauthorizedEvent) {
         window.dispatchEvent(new Event('unauthorized'));
       }
 

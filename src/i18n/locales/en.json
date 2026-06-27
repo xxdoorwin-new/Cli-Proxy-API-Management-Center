@@ -960,6 +960,11 @@
         "headers": {
           "title": "Header Defaults",
           "description": "Default headers for Claude and Codex OAuth requests when the client omits them",
+          "privacy_title": "Privacy Masquerading",
+          "ip_masquerade": "Enable IP Masquerading",
+          "ip_masquerade_desc": "Remove X-Forwarded-For, X-Real-IP, Forwarded, Via, and similar headers that expose downstream client addresses",
+          "device_masquerade": "Enable Device Masquerading",
+          "device_masquerade_desc": "Stabilize UA/device fingerprints in each upstream agent's own format, such as Claude Code style for Claude and Codex style for Codex",
           "claude_title": "Claude Header Defaults",
           "codex_title": "Codex Header Defaults",
           "user_agent": "User-Agent",

@@ -336,6 +336,24 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     hintKey: L('sections.system.antigravity_signature_strict_desc'),
     yamlKeys: ['antigravity-signature-bypass-strict'],
   },
+  {
+    fieldId: 'privacyIpMasquerade',
+    sectionId: 'advanced',
+    labelKey: L('sections.headers.ip_masquerade'),
+    qualifierKey: L('sections.headers.privacy_title'),
+    hintKey: L('sections.headers.ip_masquerade_desc'),
+    yamlKeys: ['privacy', 'ip-masquerade'],
+    keywords: ['privacy', 'ip', 'masquerade'],
+  },
+  {
+    fieldId: 'privacyDeviceMasquerade',
+    sectionId: 'advanced',
+    labelKey: L('sections.headers.device_masquerade'),
+    qualifierKey: L('sections.headers.privacy_title'),
+    hintKey: L('sections.headers.device_masquerade_desc'),
+    yamlKeys: ['privacy', 'device-masquerade'],
+    keywords: ['privacy', 'device', 'fingerprint', 'masquerade'],
+  },
   // Claude header defaults — qualifierKey disambiguates the shared "User-Agent" label.
   {
     fieldId: 'claudeHeaderUserAgent',
