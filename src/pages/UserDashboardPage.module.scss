@@ -50,6 +50,22 @@
   grid-column: 1 / -1;
 }
 
+.settingsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+
+  @media (max-width: $breakpoint-mobile) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  p {
+    margin: $spacing-xs 0 0;
+  }
+}
+
 .label {
   color: var(--text-secondary);
   font-size: 13px;

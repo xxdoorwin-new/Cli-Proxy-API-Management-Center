@@ -7,11 +7,28 @@ export interface UserAPIKey {
   name: string;
   prefix: string;
   status: string;
+  configured_key_fingerprint: string;
+  configured_key_present: boolean;
   created_at: string;
   updated_at: string;
   expires_at?: string;
   last_used_at?: string;
-  plaintext?: string;
+}
+
+export interface ConfiguredAPIKey {
+  fingerprint: string;
+  prefix: string;
+  assigned: boolean;
+  assigned_user_id?: string;
+  assigned_key_id?: string;
+  assigned_key_name?: string;
+  assigned_status?: string;
+  last_used_at?: string;
+  configured_present: boolean;
+}
+
+export interface UserManagementSettings {
+  enabled: boolean;
 }
 
 export interface ModelPolicy {
@@ -102,6 +119,14 @@ export const userSessionApi = {
 };
 
 export const userAdminApi = {
+  getUserManagementSettings: () =>
+    apiClient.get<UserManagementSettings>('/v0/management/user-management/settings'),
+
+  updateUserManagementSettings: (enabled: boolean) =>
+    apiClient.patch<UserManagementSettings>('/v0/management/user-management/settings', {
+      enabled,
+    }),
+
   listUsers: (params: { status?: string; role?: string; query?: string } = {}) => {
     const search = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -128,8 +153,36 @@ export const userAdminApi = {
   listUserKeys: (userID: string) =>
     apiClient.get<{ api_keys: UserAPIKey[] }>(`/v0/management/users/${userID}/api-keys`),
 
-  createUserKey: (userID: string, name: string) =>
-    apiClient.post<{ api_key: UserAPIKey }>(`/v0/management/users/${userID}/api-keys`, { name }),
+  listConfiguredKeys: () =>
+    apiClient.get<{ api_keys: ConfiguredAPIKey[] }>('/v0/management/configured-api-keys'),
+
+  bindUserKey: (userID: string, configuredKeyFingerprint: string, name: string) =>
+    apiClient.post<{ api_key: UserAPIKey }>(`/v0/management/users/${userID}/api-keys`, {
+      name,
+      configured_key_fingerprint: configuredKeyFingerprint,
+    }),
+
+  disableUserKey: (userID: string, keyID: string) =>
+    apiClient.post<{ api_key: UserAPIKey }>(
+      `/v0/management/users/${userID}/api-keys/${keyID}/disable`
+    ),
+
+  enableUserKey: (userID: string, keyID: string) =>
+    apiClient.post<{ api_key: UserAPIKey }>(
+      `/v0/management/users/${userID}/api-keys/${keyID}/enable`
+    ),
+
+  unbindUserKey: (userID: string, keyID: string) =>
+    apiClient.delete<{ status: string }>(`/v0/management/users/${userID}/api-keys/${keyID}`),
+
+  getUserQuotaSummary: (userID: string) =>
+    apiClient.get<{ quota: QuotaSummary }>(`/v0/management/users/${userID}/quota-summary`),
+
+  getUserUsage: (userID: string, limit = 20, offset = 0) =>
+    apiClient.get<{ usage: UsageSummary }>(`/v0/management/users/${userID}/usage?limit=${limit}&offset=${offset}`),
+
+  getUserModelPolicy: (userID: string) =>
+    apiClient.get<{ model_policy: ModelPolicy }>(`/v0/management/users/${userID}/model-policy`),
 
   setUserModelPolicy: (userID: string, policy: { allow_all: boolean; models: string[] }) =>
     apiClient.put<{ model_policy: ModelPolicy }>(
@@ -137,14 +190,21 @@ export const userAdminApi = {
       policy
     ),
 
+  getUserQuotaPolicy: (userID: string) =>
+    apiClient.get<{ quota_policy: QuotaPolicy }>(`/v0/management/users/${userID}/quota-policy`),
+
   setUserQuotaPolicy: (userID: string, policy: { period: string; limit_credits: number }) =>
     apiClient.put<{ quota_policy: QuotaPolicy }>(
       `/v0/management/users/${userID}/quota-policy`,
       policy
     ),
 
-  listPricingRules: () => apiClient.get<{ pricing_rules: PricingRule[] }>('/v0/management/pricing-rules'),
+  listPricingRules: () =>
+    apiClient.get<{ pricing_rules: PricingRule[] }>('/v0/management/pricing-rules'),
 
   setPricingRule: (rule: Partial<PricingRule> & { model: string }) =>
     apiClient.put<{ pricing_rule: PricingRule }>('/v0/management/pricing-rules', rule),
+
+  deletePricingRule: (model: string) =>
+    apiClient.delete<{ status: string }>(`/v0/management/pricing-rules?model=${encodeURIComponent(model)}`),
 };
