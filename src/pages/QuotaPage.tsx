@@ -21,12 +21,14 @@ import styles from './QuotaPage.module.scss';
 export function QuotaPage() {
   const { t } = useTranslation();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const authMode = useAuthStore((state) => state.authMode);
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const disableControls = connectionStatus !== 'connected';
+  const allowQuotaReset = authMode !== 'user';
 
   const loadFiles = useCallback(async () => {
     setLoading(true);
@@ -62,30 +64,35 @@ export function QuotaPage() {
         files={files}
         loading={loading}
         disabled={disableControls}
+        allowReset={allowQuotaReset}
       />
       <QuotaSection
         config={ANTIGRAVITY_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}
+        allowReset={allowQuotaReset}
       />
       <QuotaSection
         config={CODEX_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}
+        allowReset={allowQuotaReset}
       />
       <QuotaSection
         config={XAI_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}
+        allowReset={allowQuotaReset}
       />
       <QuotaSection
         config={KIMI_CONFIG}
         files={files}
         loading={loading}
         disabled={disableControls}
+        allowReset={allowQuotaReset}
       />
     </div>
   );

@@ -96,13 +96,15 @@ interface QuotaSectionProps<TState extends QuotaStatusState, TData> {
   files: AuthFileItem[];
   loading: boolean;
   disabled: boolean;
+  allowReset?: boolean;
 }
 
 export function QuotaSection<TState extends QuotaStatusState, TData>({
   config,
   files,
   loading,
-  disabled
+  disabled,
+  allowReset = true
 }: QuotaSectionProps<TState, TData>) {
   const { t } = useTranslation();
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
@@ -361,7 +363,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
               const canUseQuotaAction =
                 !disabled && !item.disabled && itemQuota?.status !== 'loading';
               const showResetQuotaAction =
-                itemQuota !== undefined && Boolean(config.canResetQuota?.(itemQuota));
+                allowReset && itemQuota !== undefined && Boolean(config.canResetQuota?.(itemQuota));
               const resetQuotaAction = config.resetQuota && showResetQuotaAction ? (
                 <Button
                   type="button"

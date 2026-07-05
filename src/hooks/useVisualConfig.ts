@@ -794,6 +794,7 @@ function getNextDirtyFields(
       'quotaSwitchProject',
       'quotaSwitchPreviewModel',
       'quotaAntigravityCredits',
+      'userQuotaAllowViewTotalRemaining',
       'routingStrategy',
       'routingSessionAffinity',
       'routingSessionAffinityTTL',
@@ -940,6 +941,8 @@ export function useVisualConfig() {
       const parsed = asRecord(parsedRaw) ?? {};
       const tls = asRecord(parsed.tls);
       const remoteManagement = asRecord(parsed['remote-management']);
+      const userManagement = asRecord(parsed['user-management']);
+      const userManagementQuota = asRecord(userManagement?.quota);
       const quotaExceeded = asRecord(parsed['quota-exceeded']);
       const routing = asRecord(parsed.routing);
       const payload = asRecord(parsed.payload);
@@ -1041,6 +1044,9 @@ export function useVisualConfig() {
         quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
         quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
         quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
+        userQuotaAllowViewTotalRemaining: Boolean(
+          userManagementQuota?.['allow-user-view-total-remaining'] ?? false
+        ),
 
         routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
         routingSessionAffinity: Boolean(
@@ -1312,6 +1318,38 @@ export function useVisualConfig() {
           ensureMapInDoc(doc, ['codex']);
           setBooleanInDoc(doc, ['codex', 'identity-confuse'], values.codexIdentityConfuse);
           deleteIfMapEmpty(doc, ['codex']);
+        }
+
+        if (
+          docHas(doc, ['user-management']) ||
+          values.userQuotaAllowViewTotalRemaining ||
+          shouldWriteManagedField(
+            doc,
+            ['user-management', 'quota', 'allow-user-view-total-remaining'],
+            dirtyFields,
+            'userQuotaAllowViewTotalRemaining'
+          )
+        ) {
+          ensureMapInDoc(doc, ['user-management']);
+          if (
+            docHas(doc, ['user-management', 'quota']) ||
+            values.userQuotaAllowViewTotalRemaining ||
+            shouldWriteManagedField(
+              doc,
+              ['user-management', 'quota', 'allow-user-view-total-remaining'],
+              dirtyFields,
+              'userQuotaAllowViewTotalRemaining'
+            )
+          ) {
+            ensureMapInDoc(doc, ['user-management', 'quota']);
+            setBooleanInDoc(
+              doc,
+              ['user-management', 'quota', 'allow-user-view-total-remaining'],
+              values.userQuotaAllowViewTotalRemaining
+            );
+            deleteIfMapEmpty(doc, ['user-management', 'quota']);
+          }
+          deleteIfMapEmpty(doc, ['user-management']);
         }
 
         if (

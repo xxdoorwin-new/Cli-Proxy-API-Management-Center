@@ -29,6 +29,7 @@ export interface ConfiguredAPIKey {
 
 export interface UserManagementSettings {
   enabled: boolean;
+  allow_user_view_total_remaining: boolean;
 }
 
 export interface ModelPolicy {
@@ -122,9 +123,9 @@ export const userAdminApi = {
   getUserManagementSettings: () =>
     apiClient.get<UserManagementSettings>('/v0/management/user-management/settings'),
 
-  updateUserManagementSettings: (enabled: boolean) =>
+  updateUserManagementSettings: (settings: Partial<UserManagementSettings>) =>
     apiClient.patch<UserManagementSettings>('/v0/management/user-management/settings', {
-      enabled,
+      ...settings,
     }),
 
   listUsers: (params: { status?: string; role?: string; query?: string } = {}) => {

@@ -1018,7 +1018,9 @@
           "switch_project_desc": "Automatically switch to another project when quota is exceeded",
           "switch_preview_model": "Switch to Preview Model",
           "switch_preview_model_desc": "Switch to preview model version when quota is exceeded",
-          "antigravity_credits": "Use Antigravity Credits"
+          "antigravity_credits": "Use Antigravity Credits",
+          "user_view_total_remaining": "Let users view total remaining traffic",
+          "user_view_total_remaining_desc": "Allow ordinary users to view and refresh remaining quota for all upstream credentials on the quota page"
         },
         "streaming": {
           "title": "Streaming Configuration",
@@ -1608,6 +1610,8 @@
     "description": "Review registrations and manage user access.",
     "serviceLabel": "User management service",
     "serviceDescription": "Enable the user portal, bound API key authorization, model access rules, and quota ledger.",
+    "quotaVisibilityLabel": "Let users view total remaining traffic",
+    "quotaVisibilityDescription": "When enabled, ordinary users can open quota management to view and refresh remaining upstream quota, but still cannot edit configuration.",
     "enabled": "Enabled",
     "disabled": "Disabled",
     "disabledNote": "User management is disabled",

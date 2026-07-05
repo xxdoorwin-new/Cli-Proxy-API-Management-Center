@@ -643,6 +643,21 @@ export function VisualConfigEditor({
       />
     </FieldAnchor>
   );
+  const userQuotaAllowViewTotalRemainingToggle = (
+    <FieldAnchor fieldId="userQuotaAllowViewTotalRemaining">
+      <ToggleRow
+        title={t('config_management.visual.sections.quota.user_view_total_remaining')}
+        description={t(
+          'config_management.visual.sections.quota.user_view_total_remaining_desc'
+        )}
+        checked={values.userQuotaAllowViewTotalRemaining}
+        disabled={disabled}
+        onChange={(userQuotaAllowViewTotalRemaining) =>
+          onChange({ userQuotaAllowViewTotalRemaining })
+        }
+      />
+    </FieldAnchor>
+  );
 
   const navContent = (
     <div className={styles.navList}>
@@ -852,6 +867,7 @@ export function VisualConfigEditor({
             {loggingToFileToggle}
             {quotaSwitchProjectToggle}
             {quotaSwitchPreviewModelToggle}
+            {userQuotaAllowViewTotalRemainingToggle}
           </div>
 
           <button
@@ -1351,6 +1367,7 @@ export function VisualConfigEditor({
               <SectionGrid>
                 {quotaSwitchProjectToggle}
                 {quotaSwitchPreviewModelToggle}
+                {userQuotaAllowViewTotalRemainingToggle}
                 <FieldAnchor fieldId="quotaAntigravityCredits">
                   <ToggleRow
                     title={t('config_management.visual.sections.quota.antigravity_credits')}

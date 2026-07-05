@@ -285,6 +285,14 @@ export const CONFIG_FIELD_SEARCH_INDEX: ConfigFieldSearchEntry[] = [
     labelKey: L('sections.quota.antigravity_credits'),
     yamlKeys: ['quota-exceeded', 'antigravity-credits'],
   },
+  {
+    fieldId: 'userQuotaAllowViewTotalRemaining',
+    sectionId: 'quota',
+    labelKey: L('sections.quota.user_view_total_remaining'),
+    hintKey: L('sections.quota.user_view_total_remaining_desc'),
+    yamlKeys: ['user-management', 'quota', 'allow-user-view-total-remaining'],
+    keywords: ['ordinary user', 'quota', 'remaining', 'traffic'],
+  },
   // ── streaming ─────────────────────────────────────────────────────────────
   {
     fieldId: 'streamingKeepaliveSeconds',

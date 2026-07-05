@@ -20,6 +20,7 @@ const createUserRoutes = () => [
   { path: '/', element: <UserDashboardPage /> },
   { path: '/dashboard', element: <UserDashboardPage /> },
   { path: '/user-dashboard', element: <UserDashboardPage /> },
+  { path: '/quota', element: <QuotaPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 

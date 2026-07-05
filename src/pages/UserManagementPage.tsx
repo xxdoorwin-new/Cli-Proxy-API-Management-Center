@@ -8,6 +8,7 @@ import styles from './UserDashboardPage.module.scss';
 export function UserManagementPage() {
   const { t } = useTranslation();
   const [userManagementEnabled, setUserManagementEnabled] = useState(false);
+  const [allowUserViewTotalRemaining, setAllowUserViewTotalRemaining] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [users, setUsers] = useState<UserPrincipal[]>([]);
@@ -37,6 +38,7 @@ export function UserManagementPage() {
       setSettingsLoading(true);
       const settings = await userAdminApi.getUserManagementSettings();
       setUserManagementEnabled(settings.enabled);
+      setAllowUserViewTotalRemaining(settings.allow_user_view_total_remaining);
       setSettingsLoading(false);
       if (!settings.enabled) {
         setUsers([]);
@@ -80,8 +82,9 @@ export function UserManagementPage() {
     setSettingsSaving(true);
     setError('');
     try {
-      const settings = await userAdminApi.updateUserManagementSettings(enabled);
+      const settings = await userAdminApi.updateUserManagementSettings({ enabled });
       setUserManagementEnabled(settings.enabled);
+      setAllowUserViewTotalRemaining(settings.allow_user_view_total_remaining);
       if (!settings.enabled) {
         setUsers([]);
         setSelectedUser(null);
@@ -94,6 +97,24 @@ export function UserManagementPage() {
     } catch (err) {
       setUserManagementEnabled(previous);
       setError(err instanceof Error ? err.message : 'Failed to update user management');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const toggleAllowUserViewTotalRemaining = async (allow: boolean) => {
+    const previous = allowUserViewTotalRemaining;
+    setAllowUserViewTotalRemaining(allow);
+    setSettingsSaving(true);
+    setError('');
+    try {
+      const settings = await userAdminApi.updateUserManagementSettings({
+        allow_user_view_total_remaining: allow,
+      });
+      setAllowUserViewTotalRemaining(settings.allow_user_view_total_remaining);
+    } catch (err) {
+      setAllowUserViewTotalRemaining(previous);
+      setError(err instanceof Error ? err.message : 'Failed to update quota visibility');
     } finally {
       setSettingsSaving(false);
     }
@@ -244,6 +265,24 @@ export function UserManagementPage() {
             onChange={(enabled) => void toggleUserManagement(enabled)}
             ariaLabel="Toggle user management"
             label={userManagementEnabled ? t('userManagement.enabled') : t('userManagement.disabled')}
+            labelPosition="left"
+          />
+        </div>
+        <div className={styles.settingsRow}>
+          <div>
+            <div className={styles.label}>{t('userManagement.quotaVisibilityLabel')}</div>
+            <p className={styles.muted}>{t('userManagement.quotaVisibilityDescription')}</p>
+          </div>
+          <ToggleSwitch
+            checked={allowUserViewTotalRemaining}
+            disabled={settingsLoading || settingsSaving || !userManagementEnabled}
+            onChange={(allow) => void toggleAllowUserViewTotalRemaining(allow)}
+            ariaLabel={t('userManagement.quotaVisibilityLabel')}
+            label={
+              allowUserViewTotalRemaining
+                ? t('userManagement.enabled')
+                : t('userManagement.disabled')
+            }
             labelPosition="left"
           />
         </div>

@@ -526,6 +526,12 @@ export function MainLayout() {
               meta: 'Usage and quota',
               icon: sidebarIcons.dashboard,
             },
+            {
+              path: '/quota',
+              labelKey: 'nav.quota_management',
+              metaKey: 'nav_meta.quota_management',
+              icon: sidebarIcons.quota,
+            },
           ],
         },
       ]

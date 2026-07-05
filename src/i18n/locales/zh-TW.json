@@ -1044,7 +1044,9 @@
           "switch_project_desc": "配額耗盡時自動切換到其他專案",
           "switch_preview_model": "切換預覽模型",
           "switch_preview_model_desc": "配額耗盡時切換到預覽版本模型",
-          "antigravity_credits": "使用Antigravity Credits"
+          "antigravity_credits": "使用Antigravity Credits",
+          "user_view_total_remaining": "普通使用者查看總剩餘流量",
+          "user_view_total_remaining_desc": "允許普通使用者在配額管理頁查看並重新整理所有上游憑證的剩餘額度"
         },
         "streaming": {
           "title": "串流傳輸設定",
@@ -1634,6 +1636,8 @@
     "description": "審核註冊申請並管理使用者存取權限。",
     "serviceLabel": "使用者管理服務",
     "serviceDescription": "啟用使用者入口、綁定 API 金鑰授權、模型存取規則和配額帳本。",
+    "quotaVisibilityLabel": "普通使用者查看總剩餘流量",
+    "quotaVisibilityDescription": "開啟後普通使用者可進入配額管理頁查看並重新整理所有上游憑證剩餘額度，但仍不能修改設定。",
     "enabled": "已啟用",
     "disabled": "已停用",
     "disabledNote": "使用者管理已停用",

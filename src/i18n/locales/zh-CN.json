@@ -1018,7 +1018,9 @@
           "switch_project_desc": "配额耗尽时自动切换到其他项目",
           "switch_preview_model": "切换预览模型",
           "switch_preview_model_desc": "配额耗尽时切换到预览版本模型",
-          "antigravity_credits": "使用Antigravity Credits"
+          "antigravity_credits": "使用Antigravity Credits",
+          "user_view_total_remaining": "普通用户查看总剩余流量",
+          "user_view_total_remaining_desc": "允许普通用户在配额管理页查看并刷新所有上游凭证的剩余额度"
         },
         "streaming": {
           "title": "流式传输配置",
@@ -1608,6 +1610,8 @@
     "description": "审核注册申请并管理用户访问权限。",
     "serviceLabel": "用户管理服务",
     "serviceDescription": "启用用户门户、绑定 API 密钥授权、模型访问规则和配额账本。",
+    "quotaVisibilityLabel": "普通用户查看总剩余流量",
+    "quotaVisibilityDescription": "开启后普通用户可进入配额管理页查看并刷新所有上游凭证剩余额度，但仍不能修改配置。",
     "enabled": "已启用",
     "disabled": "已禁用",
     "disabledNote": "用户管理已禁用",
