@@ -1717,6 +1717,16 @@
     "pricingRequest": "Request (per request)",
     "pricingSave": "Save rule",
     "actionEdit": "Edit",
-    "actionDelete": "Delete"
+    "actionDelete": "Delete",
+    "statusPending": "Pending",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "statusSuspended": "Suspended",
+    "actionReApprove": "Re-approve",
+    "actionDeleteUser": "Delete user",
+    "deleteUserTitle": "Confirm delete user",
+    "deleteUserMessage": "Delete user \"{{username}}\"? The account will be soft-deleted and the username/email can be reused for registration.",
+    "deleteUserSuccess": "User \"{{username}}\" has been deleted",
+    "deleteUserFailed": "Failed to delete user"
   }
 }

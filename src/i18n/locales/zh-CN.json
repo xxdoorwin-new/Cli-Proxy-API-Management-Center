@@ -1717,6 +1717,16 @@
     "pricingRequest": "请求（每次）",
     "pricingSave": "保存规则",
     "actionEdit": "编辑",
-    "actionDelete": "删除"
+    "actionDelete": "删除",
+    "statusPending": "待审批",
+    "statusApproved": "已批准",
+    "statusRejected": "已拒绝",
+    "statusSuspended": "已暂停",
+    "actionReApprove": "重新批准",
+    "actionDeleteUser": "删除用户",
+    "deleteUserTitle": "确认删除用户",
+    "deleteUserMessage": "确定要删除用户「{{username}}」吗？用户数据将被标记为删除，该用户可以使用相同的用户名和邮箱重新注册。",
+    "deleteUserSuccess": "用户「{{username}}」已删除",
+    "deleteUserFailed": "删除用户失败"
   }
 }

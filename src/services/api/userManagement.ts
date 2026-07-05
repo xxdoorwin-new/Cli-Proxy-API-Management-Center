@@ -158,6 +158,9 @@ export const userAdminApi = {
   reactivateUser: (id: string) =>
     apiClient.post<{ user: UserPrincipal }>(`/v0/management/users/${id}/reactivate`),
 
+  deleteUser: (id: string) =>
+    apiClient.post<{ status: string }>(`/v0/management/users/${id}/delete`),
+
   listUserKeys: (userID: string) =>
     apiClient.get<{ api_keys: UserAPIKey[] }>(`/v0/management/users/${userID}/api-keys`),
 

@@ -2,11 +2,24 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { userAdminApi, type ConfiguredAPIKey, type ModelPolicy, type PricingRule, type QuotaPolicy, type QuotaSummary, type UsageLedgerRow, type UserAPIKey } from '@/services/api';
+import { useNotificationStore } from '@/stores';
 import type { UserPrincipal } from '@/types';
 import styles from './UserDashboardPage.module.scss';
 
+function localizeStatus(status: string, t: (key: string) => string): string {
+  const map: Record<string, string> = {
+    pending: t('userManagement.statusPending'),
+    approved: t('userManagement.statusApproved'),
+    rejected: t('userManagement.statusRejected'),
+    suspended: t('userManagement.statusSuspended'),
+  };
+  return map[status] ?? status;
+}
+
 export function UserManagementPage() {
   const { t } = useTranslation();
+  const showConfirmation = useNotificationStore((state) => state.showConfirmation);
+  const showNotification = useNotificationStore((state) => state.showNotification);
   const [userManagementEnabled, setUserManagementEnabled] = useState(false);
   const [allowUserViewTotalRemaining, setAllowUserViewTotalRemaining] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
@@ -73,6 +86,22 @@ export function UserManagementPage() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Operation failed');
+    }
+  };
+
+  const handleDeleteUser = async (user: UserPrincipal) => {
+    try {
+      await userAdminApi.deleteUser(user.id);
+      // Remove locally immediately — backend may still return soft-deleted users in listUsers()
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      if (selectedUser?.id === user.id) {
+        setSelectedUser(null);
+        setKeys([]);
+      }
+      showNotification(t('userManagement.deleteUserSuccess', { username: user.username }), 'success');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t('userManagement.deleteUserFailed');
+      showNotification(msg, 'error');
     }
   };
 
@@ -312,7 +341,7 @@ export function UserManagementPage() {
                 <tr key={user.id}>
                   <td>{user.username}</td>
                   <td>{user.email}</td>
-                  <td>{user.status}</td>
+                  <td>{localizeStatus(user.status, t)}</td>
                   <td>{user.role}</td>
                   <td>
                     <button type="button" onClick={() => void loadUserDetail(user)}>
@@ -350,6 +379,28 @@ export function UserManagementPage() {
                         {t('userManagement.actionReactivate')}
                       </button>
                     ) : null}
+                    {user.status === 'rejected' ? (
+                      <button
+                        type="button"
+                        onClick={() => void run(() => userAdminApi.approveUser(user.id))}
+                      >
+                        {t('userManagement.actionReApprove')}
+                      </button>
+                    ) : null}{' '}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        showConfirmation({
+                          title: t('userManagement.deleteUserTitle'),
+                          message: t('userManagement.deleteUserMessage', { username: user.username }),
+                          confirmText: t('userManagement.actionDeleteUser'),
+                          variant: 'danger',
+                          onConfirm: () => handleDeleteUser(user),
+                        })
+                      }
+                    >
+                      {t('userManagement.actionDeleteUser')}
+                    </button>
                   </td>
                 </tr>
               ))}
