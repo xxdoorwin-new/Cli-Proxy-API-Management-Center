@@ -55,6 +55,8 @@ export interface AuthState {
   serverBuildDate: string | null;
   serverRuntimeKind: ServerRuntimeKind;
   supportsPlugin: boolean;
+  /** null = not yet determined; true = allowed; false = denied */
+  userCanViewQuota: boolean | null;
 }
 
 // 连接状态

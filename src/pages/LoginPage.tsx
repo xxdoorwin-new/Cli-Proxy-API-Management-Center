@@ -19,7 +19,11 @@ import styles from './LoginPage.module.scss';
  */
 type RedirectState = { from?: { pathname?: string } };
 
-function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): string {
+function getLocalizedErrorMessage(
+  error: unknown,
+  t: (key: string) => string,
+  mode?: 'management' | 'user' | 'register'
+): string {
   const apiError = error as Partial<ApiError>;
   const status = typeof apiError.status === 'number' ? apiError.status : undefined;
   const code = typeof apiError.code === 'string' ? apiError.code : undefined;
@@ -47,7 +51,50 @@ function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): s
     return `HTTP ${status}: ${summary}${backendDetail}`;
   };
 
-  // 根据 HTTP 状态码判断
+  const msgLower = message.toLowerCase();
+
+  // 注册模式的专属错误
+  if (mode === 'register') {
+    if (status === 409) {
+      return withHttpStatus(t('login.error_register_duplicate'));
+    }
+    if (
+      status === 400 &&
+      (msgLower.includes('exist') ||
+        msgLower.includes('duplicate') ||
+        msgLower.includes('conflict') ||
+        msgLower.includes('already') ||
+        msgLower.includes('taken') ||
+        msgLower.includes('已存在') ||
+        msgLower.includes('重复'))
+    ) {
+      return withHttpStatus(t('login.error_register_duplicate'));
+    }
+    if (status && status >= 400 && status < 500) {
+      return withHttpStatus(t('login.error_register_failed'));
+    }
+  }
+
+  // 用户登录模式的专属错误
+  if (mode === 'user') {
+    if (status === 401) {
+      return withHttpStatus(t('login.error_user_login_failed'));
+    }
+    if (status === 403) {
+      if (msgLower.includes('pending') || msgLower.includes('审批') || msgLower.includes('approval')) {
+        return withHttpStatus(t('login.error_user_pending'));
+      }
+      if (msgLower.includes('reject') || msgLower.includes('denied') || msgLower.includes('拒绝')) {
+        return withHttpStatus(t('login.error_user_rejected'));
+      }
+      if (msgLower.includes('suspend') || msgLower.includes('暂停')) {
+        return withHttpStatus(t('login.error_user_suspended'));
+      }
+      return withHttpStatus(t('login.error_user_forbidden'));
+    }
+  }
+
+  // 通用 HTTP 状态码判断（管理员模式及兜底）
   if (status === 401) {
     return withHttpStatus(t('login.error_unauthorized'));
   }
@@ -62,18 +109,18 @@ function getLocalizedErrorMessage(error: unknown, t: (key: string) => string): s
   }
 
   // 根据 axios 错误码判断
-  if (code === 'ECONNABORTED' || message.toLowerCase().includes('timeout')) {
+  if (code === 'ECONNABORTED' || msgLower.includes('timeout')) {
     return t('login.error_timeout');
   }
-  if (code === 'ERR_NETWORK' || message.toLowerCase().includes('network error')) {
+  if (code === 'ERR_NETWORK' || msgLower.includes('network error')) {
     return t('login.error_network');
   }
-  if (code === 'ERR_CERT_AUTHORITY_INVALID' || message.toLowerCase().includes('certificate')) {
+  if (code === 'ERR_CERT_AUTHORITY_INVALID' || msgLower.includes('certificate')) {
     return t('login.error_ssl');
   }
 
   // 检查 CORS 错误
-  if (message.toLowerCase().includes('cors') || message.toLowerCase().includes('cross-origin')) {
+  if (msgLower.includes('cors') || msgLower.includes('cross-origin')) {
     return t('login.error_cors');
   }
 
@@ -208,7 +255,7 @@ export function LoginPage() {
       showNotification(t('common.connected_status'), 'success');
       navigate('/', { replace: true });
     } catch (err: unknown) {
-      const message = getLocalizedErrorMessage(err, t);
+      const message = getLocalizedErrorMessage(err, t, mode);
       setError(message);
       showNotification(`${t('notification.login_failed')}: ${message}`, 'error');
     } finally {

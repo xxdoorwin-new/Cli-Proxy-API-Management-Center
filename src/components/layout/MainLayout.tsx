@@ -305,6 +305,7 @@ export function MainLayout() {
   const supportsPlugin = useAuthStore((state) => state.supportsPlugin);
   const authMode = useAuthStore((state) => state.authMode);
   const currentUser = useAuthStore((state) => state.currentUser);
+  const userCanViewQuota = useAuthStore((state) => state.userCanViewQuota);
 
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const clearCache = useConfigStore((state) => state.clearCache);
@@ -526,12 +527,16 @@ export function MainLayout() {
               meta: 'Usage and quota',
               icon: sidebarIcons.dashboard,
             },
-            {
-              path: '/quota',
-              labelKey: 'nav.quota_management',
-              metaKey: 'nav_meta.quota_management',
-              icon: sidebarIcons.quota,
-            },
+            ...(userCanViewQuota !== false
+              ? [
+                  {
+                    path: '/quota',
+                    labelKey: 'nav.quota_management',
+                    metaKey: 'nav_meta.quota_management',
+                    icon: sidebarIcons.quota,
+                  },
+                ]
+              : []),
           ],
         },
       ]

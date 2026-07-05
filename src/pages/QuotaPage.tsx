@@ -3,6 +3,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useAuthStore } from '@/stores';
@@ -20,8 +21,11 @@ import styles from './QuotaPage.module.scss';
 
 export function QuotaPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const connectionStatus = useAuthStore((state) => state.connectionStatus);
   const authMode = useAuthStore((state) => state.authMode);
+  const currentUser = useAuthStore((state) => state.currentUser);
+  const setUserCanViewQuota = useAuthStore((state) => state.setUserCanViewQuota);
 
   const [files, setFiles] = useState<AuthFileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +33,16 @@ export function QuotaPage() {
 
   const disableControls = connectionStatus !== 'connected';
   const allowQuotaReset = authMode !== 'user';
+  const userOnly = authMode === 'user' && currentUser?.role !== 'admin';
+
+  const isPermissionError = (err: unknown): boolean => {
+    if (err instanceof Error) {
+      const msg = err.message.toLowerCase();
+      if (msg.includes('admin') || msg.includes('forbidden') || msg.includes('403')) return true;
+    }
+    const apiErr = err as { status?: number };
+    return apiErr?.status === 403;
+  };
 
   const loadFiles = useCallback(async () => {
     setLoading(true);
@@ -36,13 +50,21 @@ export function QuotaPage() {
     try {
       const data = await authFilesApi.list();
       setFiles(data?.files || []);
+      if (userOnly) {
+        setUserCanViewQuota(true);
+      }
     } catch (err: unknown) {
+      if (userOnly && isPermissionError(err)) {
+        setUserCanViewQuota(false);
+        navigate('/', { replace: true });
+        return;
+      }
       const errorMessage = err instanceof Error ? err.message : t('notification.refresh_failed');
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, userOnly, setUserCanViewQuota, navigate]);
 
   useHeaderRefresh(loadFiles);
 

@@ -33,6 +33,7 @@ interface AuthStoreState extends AuthState {
   logout: () => void;
   checkAuth: () => Promise<boolean>;
   restoreSession: () => Promise<boolean>;
+  setUserCanViewQuota: (can: boolean) => void;
   updateServerVersion: (
     version: string | null,
     buildDate?: string | null,
@@ -69,6 +70,7 @@ export const useAuthStore = create<AuthStoreState>()(
       serverBuildDate: null,
       serverRuntimeKind: 'unknown',
       supportsPlugin: false,
+      userCanViewQuota: null,
       connectionStatus: 'disconnected',
       connectionError: null,
 
@@ -253,6 +255,8 @@ export const useAuthStore = create<AuthStoreState>()(
         });
       },
 
+      setUserCanViewQuota: (can: boolean) => set({ userCanViewQuota: can }),
+
       // 登出
       logout: () => {
         const { authMode, userSessionToken, apiBase } = get();
@@ -273,6 +277,7 @@ export const useAuthStore = create<AuthStoreState>()(
           serverBuildDate: null,
           serverRuntimeKind: 'unknown',
           supportsPlugin: false,
+          userCanViewQuota: null,
           connectionStatus: 'disconnected',
           connectionError: null
         });

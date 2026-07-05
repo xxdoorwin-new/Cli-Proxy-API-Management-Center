@@ -6,6 +6,7 @@ export interface UserAPIKey {
   user_id: string;
   name: string;
   prefix: string;
+  api_key?: string;
   status: string;
   configured_key_fingerprint: string;
   configured_key_present: boolean;
@@ -108,6 +109,12 @@ export const userSessionApi = {
   logout: () => apiClient.post<{ status: string }>('/v0/user/logout'),
 
   profile: () => apiClient.get<{ user: UserPrincipal }>('/v0/user/profile'),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiClient.post<{ status: string }>('/v0/user/password', {
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
 
   apiKeys: () => apiClient.get<{ api_keys: UserAPIKey[] }>('/v0/user/api-keys'),
 
