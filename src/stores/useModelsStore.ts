@@ -21,6 +21,7 @@ interface ModelsState {
   cache: ModelsCache | null;
 
   fetchModels: (apiBase: string, apiKey?: string, forceRefresh?: boolean) => Promise<ModelInfo[]>;
+  fetchManagedModels: (apiBase: string, forceRefresh?: boolean) => Promise<ModelInfo[]>;
   clearCache: () => void;
   isCacheValid: (apiBase: string, apiKey?: string) => boolean;
 }
@@ -50,17 +51,62 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
       set({
         models: list,
         loading: false,
-        cache: { data: list, timestamp: now, apiBase, apiKey: apiKeyScope }
+        cache: { data: list, timestamp: now, apiBase, apiKey: apiKeyScope },
       });
 
       return list;
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'Failed to fetch models';
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'Failed to fetch models';
       set({
         error: message,
         loading: false,
-        models: []
+        models: [],
+      });
+      throw error;
+    }
+  },
+
+  fetchManagedModels: async (apiBase, forceRefresh = false) => {
+    const { cache } = get();
+    const cacheApiBase = `management:${apiBase}`;
+    const apiKey = '';
+
+    if (!forceRefresh && cache?.apiBase === cacheApiBase) {
+      if (Date.now() - cache.timestamp < CACHE_EXPIRY_MS) {
+        set({ models: cache.data, error: null });
+        return cache.data;
+      }
+    }
+
+    set({ loading: true, error: null });
+
+    try {
+      const list = await modelsApi.fetchManagedModels();
+      const now = Date.now();
+
+      set({
+        models: list,
+        loading: false,
+        cache: { data: list, timestamp: now, apiBase: cacheApiBase, apiKey },
+      });
+
+      return list;
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'Failed to fetch models';
+      set({
+        error: message,
+        loading: false,
+        models: [],
       });
       throw error;
     }
@@ -77,5 +123,5 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
     const apiKeyScope = apiKey?.trim() || '';
     if ((cache.apiKey || '') !== apiKeyScope) return false;
     return Date.now() - cache.timestamp < CACHE_EXPIRY_MS;
-  }
+  },
 }));

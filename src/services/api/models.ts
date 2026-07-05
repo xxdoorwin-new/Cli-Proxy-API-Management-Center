@@ -5,6 +5,7 @@
 import axios from 'axios';
 import { normalizeModelList } from '@/utils/models';
 import { normalizeApiBase } from '@/utils/connection';
+import { apiClient } from './client';
 import { apiCallApi, getApiCallErrorMessage } from './apiCall';
 import { isRecord } from '@/utils/helpers';
 
@@ -83,6 +84,16 @@ const resolveBearerTokenFromAuthorization = (headers: Record<string, string>): s
 
 export const modelsApi = {
   /**
+   * Fetch available models through the management API.
+   * The server reads its own model registry, so proxy API keys stay server-side.
+   */
+  async fetchManagedModels() {
+    const response = await apiClient.get('/models');
+    const payload = isRecord(response) ? (response.data ?? response.models ?? response) : response;
+    return normalizeModelList(payload, { dedupe: true });
+  },
+
+  /**
    * Fetch available models from /v1/models endpoint (for system info page)
    */
   async fetchModels(baseUrl: string, apiKey?: string, headers: Record<string, string> = {}) {
@@ -97,7 +108,7 @@ export const modelsApi = {
     }
 
     const response = await axios.get(endpoint, {
-      headers: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+      headers: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
     });
     const payload = response.data?.data ?? response.data?.models ?? response.data;
     return normalizeModelList(payload, { dedupe: true });
@@ -130,7 +141,7 @@ export const modelsApi = {
       authIndex: trimmedAuthIndex,
       method: 'GET',
       url: endpoint,
-      header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+      header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
     });
 
     if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -167,7 +178,7 @@ export const modelsApi = {
       authIndex: trimmedAuthIndex,
       method: 'GET',
       url: endpoint,
-      header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+      header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
     });
 
     if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -230,7 +241,7 @@ export const modelsApi = {
         authIndex: trimmedAuthIndex,
         method: 'GET',
         url: endpoint,
-        header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+        header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
       });
 
       if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -292,7 +303,7 @@ export const modelsApi = {
           authIndex: trimmedAuthIndex,
           method: 'GET',
           url: url.toString(),
-          header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined
+          header: Object.keys(resolvedHeaders).length ? resolvedHeaders : undefined,
         });
 
         if (result.statusCode < 200 || result.statusCode >= 300) {
@@ -314,7 +325,9 @@ export const modelsApi = {
         });
 
         const nextToken =
-          isRecord(payload) && typeof payload.nextPageToken === 'string' ? payload.nextPageToken : '';
+          isRecord(payload) && typeof payload.nextPageToken === 'string'
+            ? payload.nextPageToken
+            : '';
         if (!nextToken) {
           break;
         }
