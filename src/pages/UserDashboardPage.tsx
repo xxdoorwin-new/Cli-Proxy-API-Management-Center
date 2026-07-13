@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { userSessionApi, type ModelPolicy, type QuotaSummary, type UsageSummary, type UserAPIKey } from '@/services/api';
 import { useAuthStore } from '@/stores';
 import { copyToClipboard } from '@/utils/clipboard';
+import { formatTokenCount } from '@/utils/format';
 import styles from './UserDashboardPage.module.scss';
 
 function maskAPIKey(value: string): string {
@@ -225,10 +226,10 @@ export function UserDashboardPage() {
                 <tr key={row.id}>
                   <td>{new Date(row.created_at).toLocaleString()}</td>
                   <td>{row.model_alias || row.model}</td>
-                  <td>{row.input_tokens}</td>
-                  <td>{row.output_tokens}</td>
-                  <td>{row.cached_tokens}</td>
-                  <td>{row.reasoning_tokens}</td>
+                  <td>{formatTokenCount(row.input_tokens)}</td>
+                  <td>{formatTokenCount(row.output_tokens)}</td>
+                  <td>{formatTokenCount(row.cached_tokens)}</td>
+                  <td>{formatTokenCount(row.reasoning_tokens)}</td>
                   <td>{row.credit_cost}</td>
                   <td>{row.status}</td>
                   <td>{row.latency_millis}</td>

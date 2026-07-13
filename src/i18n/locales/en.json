@@ -1689,6 +1689,7 @@
     "quotaUnlimitedHint": "0 = unlimited",
     "quotaUnlimited": "Unlimited",
     "quotaUsage": "Quota usage this month",
+    "quotaUsageHint": "(1 credit = 1 million tokens)",
     "quotaLimit": "Limit (credits)",
     "quotaUsed": "Used (credits)",
     "quotaRemaining": "Remaining (credits)",

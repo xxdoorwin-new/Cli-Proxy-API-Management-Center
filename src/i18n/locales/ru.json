@@ -1621,6 +1621,7 @@
     "quotaUnlimitedHint": "0 = без ограничений",
     "quotaUnlimited": "Безлимитно",
     "quotaUsage": "Использование квоты за месяц",
+    "quotaUsageHint": "(1 кредит = 1 миллион токенов)",
     "quotaLimit": "Лимит (кредиты)",
     "quotaUsed": "Использовано (кредиты)",
     "quotaRemaining": "Осталось (кредиты)",

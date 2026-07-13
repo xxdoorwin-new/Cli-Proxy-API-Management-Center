@@ -1689,6 +1689,7 @@
     "quotaUnlimitedHint": "0 = 不限制",
     "quotaUnlimited": "无限制",
     "quotaUsage": "本月配额用量",
+    "quotaUsageHint": "（每信用点 = 1 百万 token）",
     "quotaLimit": "上限（信用点）",
     "quotaUsed": "已用（信用点）",
     "quotaRemaining": "剩余（信用点）",

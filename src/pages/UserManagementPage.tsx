@@ -4,6 +4,7 @@ import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { userAdminApi, type ConfiguredAPIKey, type ModelPolicy, type PricingRule, type QuotaPolicy, type QuotaSummary, type UsageLedgerRow, type UserAPIKey } from '@/services/api';
 import { useNotificationStore } from '@/stores';
 import type { UserPrincipal } from '@/types';
+import { formatTokenCount } from '@/utils/format';
 import styles from './UserDashboardPage.module.scss';
 
 function localizeStatus(status: string, t: (key: string) => string): string {
@@ -463,7 +464,9 @@ export function UserManagementPage() {
 
           {quotaSummary ? (
             <div className={styles.panel}>
-              <div className={styles.label}>{t('userManagement.quotaUsage')}</div>
+              <div className={styles.label}>
+                {t('userManagement.quotaUsage')} <span className={styles.muted}>{t('userManagement.quotaUsageHint')}</span>
+              </div>
               <table className={styles.table}>
                 <thead>
                   <tr>
@@ -510,10 +513,10 @@ export function UserManagementPage() {
                     <tr key={row.id}>
                       <td>{new Date(row.created_at).toLocaleString()}</td>
                       <td>{row.model_alias || row.model}</td>
-                      <td>{row.input_tokens}</td>
-                      <td>{row.output_tokens}</td>
-                      <td>{row.cached_tokens}</td>
-                      <td>{row.reasoning_tokens}</td>
+                      <td>{formatTokenCount(row.input_tokens)}</td>
+                      <td>{formatTokenCount(row.output_tokens)}</td>
+                      <td>{formatTokenCount(row.cached_tokens)}</td>
+                      <td>{formatTokenCount(row.reasoning_tokens)}</td>
                       <td>{row.credit_cost}</td>
                       <td>{row.status}</td>
                       <td>{row.latency_millis}</td>

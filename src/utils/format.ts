@@ -25,6 +25,29 @@ export function maskApiKey(key: string): string {
 }
 
 /**
+ * 格式化 token 数量：小于 1k 显示精确数值，1k-1m 用 k 为单位，大于等于 1m 用 m 为单位
+ * 参考 Claude CLI 的用量展示风格，例如 2.1k、16.2k、1.4m
+ */
+export function formatTokenCount(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return '0';
+  }
+
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+
+  if (abs < 1000) {
+    return `${sign}${abs}`;
+  }
+
+  if (abs < 1_000_000) {
+    return `${sign}${(abs / 1000).toFixed(1)}k`;
+  }
+
+  return `${sign}${(abs / 1_000_000).toFixed(1)}m`;
+}
+
+/**
  * 格式化文件大小
  */
 export function formatFileSize(bytes: number): string {
