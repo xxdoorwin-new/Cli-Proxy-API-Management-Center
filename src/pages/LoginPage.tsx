@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -144,8 +144,11 @@ export function LoginPage() {
   const storedKey = useAuthStore((state) => state.managementKey);
   const storedRememberPassword = useAuthStore((state) => state.rememberPassword);
 
+  const { mode: modeParam } = useParams<{ mode: string }>();
+  const mode: 'management' | 'user' | 'register' =
+    modeParam === 'user' || modeParam === 'register' ? modeParam : 'management';
+
   const [apiBase, setApiBase] = useState('');
-  const [mode, setMode] = useState<'management' | 'user' | 'register'>('management');
   const [managementKey, setManagementKey] = useState('');
   const [identity, setIdentity] = useState('');
   const [username, setUsername] = useState('');
@@ -243,8 +246,8 @@ export function LoginPage() {
           display_name: displayName.trim() || undefined
         });
         showNotification(t('login.registration_submitted', { defaultValue: '注册申请已提交' }), 'success');
-        setMode('user');
         setIdentity(username.trim() || email.trim());
+        navigate('/login/user', { replace: true });
         return;
       }
       await login({
@@ -345,18 +348,24 @@ export function LoginPage() {
               </div>
 
               <div className={styles.modeTabs}>
-                {[
-                  ['management', t('login.management_mode', { defaultValue: '管理密钥' })],
-                  ['user', t('login.user_mode', { defaultValue: '用户登录' })],
-                  ['register', t('login.register_mode', { defaultValue: '用户注册' })],
-                ].map(([value, label]) => (
+                {(mode === 'management'
+                  ? [
+                      ['management', t('login.management_mode', { defaultValue: '管理密钥' })],
+                      ['user', t('login.user_mode', { defaultValue: '用户登录' })],
+                      ['register', t('login.register_mode', { defaultValue: '用户注册' })],
+                    ]
+                  : [
+                      ['user', t('login.user_mode', { defaultValue: '用户登录' })],
+                      ['register', t('login.register_mode', { defaultValue: '用户注册' })],
+                    ]
+                ).map(([value, label]) => (
                   <button
                     key={value}
                     type="button"
                     className={`${styles.modeTab} ${mode === value ? styles.modeTabActive : ''}`}
                     onClick={() => {
-                      setMode(value as 'management' | 'user' | 'register');
                       setError('');
+                      navigate(`/login/${value}`);
                     }}
                   >
                     {label}
