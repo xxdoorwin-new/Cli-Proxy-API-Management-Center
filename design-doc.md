@@ -1,4 +1,4 @@
-# CLI Proxy API Management Center — 详细设计文档
+# User-Authorized AI Proxy — 详细设计文档
 
 > 版本：基于当前代码库分析生成
 > 生成时间：2026-06-22
@@ -27,7 +27,7 @@
 
 ## 1. 项目概述
 
-**CLI Proxy API Management Center** 是一个基于 React + TypeScript 的单文件 Web 管理界面，专门用于操作和故障排查 **CLI Proxy API** 服务。通过该界面可以与后端的 Management API（`/v0/management`）进行交互，完成配置管理、凭据上传、日志查看等运维操作。
+**User-Authorized AI Proxy** 是一个基于 React + TypeScript 的单文件 Web 管理界面，专门用于操作和故障排查 **CLI Proxy API** 服务。通过该界面可以与后端的 Management API（`/v0/management`）进行交互，完成配置管理、凭据上传、日志查看等运维操作。
 
 ### 核心定位
 

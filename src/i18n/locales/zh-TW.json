@@ -57,9 +57,9 @@
     "unsaved_changes_message": "你有未儲存的變更，離開後將遺失這些變更。確定要離開嗎？"
   },
   "title": {
-    "main": "CLI Proxy API Management Center",
-    "login": "CLI Proxy API Management Center",
-    "abbr": "CPAMC"
+    "main": "User-Authorized AI Proxy",
+    "login": "User-Authorized AI Proxy",
+    "abbr": "FREESHARE"
   },
   "splash": {
     "title": "CLI Proxy API",
@@ -1307,7 +1307,7 @@
   },
   "system_info": {
     "title": "管理中心資訊",
-    "about_title": "CLI Proxy API Management Center",
+    "about_title": "User-Authorized AI Proxy",
     "connection_status_title": "連線狀態",
     "api_status_label": "API 狀態:",
     "config_status_label": "設定狀態:",

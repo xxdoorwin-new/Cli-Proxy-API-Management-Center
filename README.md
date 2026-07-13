@@ -1,4 +1,4 @@
-# CLI Proxy API Management Center
+# User-Authorized AI Proxy
 
 A single-file Web UI (React + TypeScript) for operating and troubleshooting the **CLI Proxy API** via its **Management API** (config, credentials, and logs).
 
