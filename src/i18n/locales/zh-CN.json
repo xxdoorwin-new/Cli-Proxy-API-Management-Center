@@ -126,6 +126,7 @@
     "plugins": "插件管理",
     "plugin_store": "插件商店",
     "config_management": "配置面板",
+    "users": "用户管理",
     "logs": "日志查看",
     "system_info": "中心信息"
   },
@@ -146,6 +147,7 @@
     "plugin_store": "发现并安装插件",
     "logs": "请求追踪与排查",
     "config_management": "网关基础配置",
+    "users": "注册与配额",
     "system_info": "运行与诊断信息"
   },
   "dashboard": {
@@ -1326,7 +1328,9 @@
     "clear_login_title": "本地登录信息",
     "clear_login_desc": "清理本地保存的登录信息并退出登录。",
     "clear_login_button": "清理登录信息",
-    "clear_login_confirm": "确认清理本地登录信息并退出登录？"
+    "clear_login_confirm": "确认清理本地登录信息并退出登录？",
+    "change_password_title": "修改密码",
+    "change_password_desc": "验证当前密码后即可设置新密码。"
   },
   "notification": {
     "debug_updated": "调试设置已更新",
@@ -1648,7 +1652,12 @@
     "colPrefill": "预填充（缓存）",
     "colReasoning": "推理",
     "colCredits": "信用点",
-    "colLatency": "延迟（毫秒）"
+    "colLatency": "延迟（毫秒）",
+    "paginationFirst": "首页",
+    "paginationPrev": "上一页",
+    "paginationNext": "下一页",
+    "paginationLast": "末页",
+    "paginationInfo": "第 {{current}} / {{total}} 页 · 共 {{count}} 条"
   },
   "userManagement": {
     "title": "用户管理",
@@ -1661,6 +1670,22 @@
     "disabled": "已禁用",
     "disabledNote": "用户管理已禁用",
     "disabledNoteDesc": "现有的 API 密钥将继续通过普通密钥列表授权请求。",
+    "bootstrapTitle": "创建管理员账号",
+    "bootstrapDescription": "创建一个可以用用户名和密码登录管理面板的管理员账号。若系统内已存在管理员账号，此操作会失败。",
+    "bootstrapUsernameLabel": "用户名",
+    "bootstrapEmailLabel": "邮箱",
+    "bootstrapDisplayNameLabel": "显示名称",
+    "bootstrapPasswordLabel": "密码",
+    "bootstrapConfirmPasswordLabel": "确认密码",
+    "bootstrapSubmit": "创建管理员账号",
+    "bootstrapSuccess": "管理员账号创建成功。",
+    "bootstrapConflict": "系统中已存在管理员账号。",
+    "bootstrapFailed": "创建管理员账号失败。",
+    "bootstrapPasswordsNoMatch": "两次输入的密码不一致。",
+    "bootstrapRequiresManagementKey": "请先使用管理密钥登录，再创建管理员账号。",
+    "approveRoleLabel": "角色",
+    "roleUser": "普通用户",
+    "roleAdmin": "管理员",
     "colUser": "用户",
     "colEmail": "邮箱",
     "colStatus": "状态",
@@ -1703,6 +1728,11 @@
     "colReasoning": "推理",
     "colCredits": "信用点",
     "colLatency": "延迟（毫秒）",
+    "paginationFirst": "首页",
+    "paginationPrev": "上一页",
+    "paginationNext": "下一页",
+    "paginationLast": "末页",
+    "paginationInfo": "第 {{current}} / {{total}} 页 · 共 {{count}} 条",
     "configPresent": "已配置",
     "configMissing": "未配置",
     "pricingRulesTitle": "定价规则",

@@ -1,0 +1,21 @@
+@use '../../styles/variables.scss' as *;
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: $spacing-md;
+  flex-wrap: wrap;
+  margin-top: $spacing-sm;
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+}
+
+.info {
+  color: var(--text-secondary);
+  font-size: 13px;
+}

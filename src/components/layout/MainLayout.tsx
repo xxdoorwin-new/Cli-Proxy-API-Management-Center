@@ -607,8 +607,8 @@ export function MainLayout() {
         },
         {
           path: '/users',
-          label: 'Users',
-          meta: 'Registration and quotas',
+          labelKey: 'nav.users',
+          metaKey: 'nav_meta.users',
           icon: sidebarIcons.users,
         },
         ...(supportsPlugin

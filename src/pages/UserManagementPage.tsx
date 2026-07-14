@@ -1,11 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
+import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { userAdminApi, type ConfiguredAPIKey, type ModelPolicy, type PricingRule, type QuotaPolicy, type QuotaSummary, type UsageLedgerRow, type UserAPIKey } from '@/services/api';
-import { useNotificationStore } from '@/stores';
-import type { UserPrincipal } from '@/types';
+import { useAuthStore, useNotificationStore } from '@/stores';
+import type { ApiError, UserPrincipal } from '@/types';
 import { formatTokenCount } from '@/utils/format';
+import { PaginationControls } from '@/components/common/PaginationControls';
 import styles from './UserDashboardPage.module.scss';
+
+const RECENT_USAGE_PAGE_SIZE = 20;
 
 function localizeStatus(status: string, t: (key: string) => string): string {
   const map: Record<string, string> = {
@@ -19,6 +24,7 @@ function localizeStatus(status: string, t: (key: string) => string): string {
 
 export function UserManagementPage() {
   const { t } = useTranslation();
+  const authMode = useAuthStore((state) => state.authMode);
   const showConfirmation = useNotificationStore((state) => state.showConfirmation);
   const showNotification = useNotificationStore((state) => state.showNotification);
   const [userManagementEnabled, setUserManagementEnabled] = useState(false);
@@ -26,6 +32,13 @@ export function UserManagementPage() {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [users, setUsers] = useState<UserPrincipal[]>([]);
+  const [approveRoleByUser, setApproveRoleByUser] = useState<Record<string, string>>({});
+  const [bootstrapUsername, setBootstrapUsername] = useState('');
+  const [bootstrapPassword, setBootstrapPassword] = useState('');
+  const [bootstrapConfirmPassword, setBootstrapConfirmPassword] = useState('');
+  const [bootstrapEmail, setBootstrapEmail] = useState('');
+  const [bootstrapDisplayName, setBootstrapDisplayName] = useState('');
+  const [bootstrapSaving, setBootstrapSaving] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserPrincipal | null>(null);
   const [keys, setKeys] = useState<UserAPIKey[]>([]);
   const [configuredKeys, setConfiguredKeys] = useState<ConfiguredAPIKey[]>([]);
@@ -35,6 +48,8 @@ export function UserManagementPage() {
   const [quota, setQuota] = useState('0');
   const [quotaSummary, setQuotaSummary] = useState<QuotaSummary | null>(null);
   const [recentUsage, setRecentUsage] = useState<UsageLedgerRow[]>([]);
+  const [recentUsageTotal, setRecentUsageTotal] = useState(0);
+  const [recentUsagePage, setRecentUsagePage] = useState(1);
   const [pricingRules, setPricingRules] = useState<PricingRule[]>([]);
   // Pricing rule form state
   const [prModel, setPrModel] = useState('');
@@ -87,6 +102,41 @@ export function UserManagementPage() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Operation failed');
+    }
+  };
+
+  const handleBootstrapAdmin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (bootstrapPassword !== bootstrapConfirmPassword) {
+      showNotification(t('userManagement.bootstrapPasswordsNoMatch'), 'error');
+      return;
+    }
+    setBootstrapSaving(true);
+    try {
+      await userAdminApi.bootstrapAdmin({
+        username: bootstrapUsername.trim(),
+        password: bootstrapPassword,
+        email: bootstrapEmail.trim() || undefined,
+        display_name: bootstrapDisplayName.trim() || undefined,
+      });
+      setBootstrapUsername('');
+      setBootstrapPassword('');
+      setBootstrapConfirmPassword('');
+      setBootstrapEmail('');
+      setBootstrapDisplayName('');
+      showNotification(t('userManagement.bootstrapSuccess'), 'success');
+      await load();
+    } catch (err) {
+      const status = (err as ApiError)?.status;
+      const msg =
+        status === 409
+          ? t('userManagement.bootstrapConflict')
+          : err instanceof Error
+            ? err.message
+            : t('userManagement.bootstrapFailed');
+      showNotification(msg, 'error');
+    } finally {
+      setBootstrapSaving(false);
     }
   };
 
@@ -150,8 +200,20 @@ export function UserManagementPage() {
     }
   };
 
+  const loadRecentUsage = useCallback(async (userId: string, page: number) => {
+    try {
+      const usageRes = await userAdminApi.getUserUsage(userId, RECENT_USAGE_PAGE_SIZE, (page - 1) * RECENT_USAGE_PAGE_SIZE);
+      setRecentUsage(usageRes.usage?.recent_usage ?? []);
+      setRecentUsageTotal(usageRes.usage?.total ?? 0);
+    } catch {
+      setRecentUsage([]);
+      setRecentUsageTotal(0);
+    }
+  }, []);
+
   const loadUserDetail = async (user: UserPrincipal) => {
     setSelectedUser(user);
+    setRecentUsagePage(1);
     try {
       const [keyRes, configuredRes, modelPolicyRes, quotaPolicyRes] = await Promise.allSettled([
         userAdminApi.listUserKeys(user.id),
@@ -179,17 +241,21 @@ export function UserManagementPage() {
       } else {
         setQuota('0');
       }
-      // Load quota summary (used / remaining) and recent usage
-      const [quotaSummaryRes, usageRes] = await Promise.allSettled([
-        userAdminApi.getUserQuotaSummary(user.id),
-        userAdminApi.getUserUsage(user.id, 20),
-      ]);
-      setQuotaSummary(quotaSummaryRes.status === 'fulfilled' ? quotaSummaryRes.value.quota : null);
-      setRecentUsage(usageRes.status === 'fulfilled' ? (usageRes.value.usage?.recent_usage ?? []) : []);
+      // Load quota summary (used / remaining); recent usage is fetched by the effect below
+      const quotaSummaryRes = await userAdminApi.getUserQuotaSummary(user.id).catch(() => null);
+      setQuotaSummary(quotaSummaryRes?.quota ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load user detail');
     }
   };
+
+  useEffect(() => {
+    if (!selectedUser) {
+      return;
+    }
+    void loadRecentUsage(selectedUser.id, recentUsagePage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUser, recentUsagePage]);
 
   const refreshSelectedUserKeys = async () => {
     if (!selectedUser) return;
@@ -274,6 +340,8 @@ export function UserManagementPage() {
     setPrRequest(String(rule.request_credits));
   };
 
+  const recentUsageTotalPages = Math.max(1, Math.ceil(recentUsageTotal / RECENT_USAGE_PAGE_SIZE));
+
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
@@ -327,6 +395,63 @@ export function UserManagementPage() {
 
       {userManagementEnabled ? (
         <section className={styles.panel}>
+          <div className={styles.label}>{t('userManagement.bootstrapTitle')}</div>
+          <p className={styles.muted}>{t('userManagement.bootstrapDescription')}</p>
+          {authMode === 'management' ? (
+            <form className={styles.formGrid} onSubmit={handleBootstrapAdmin}>
+              <Input
+                label={t('userManagement.bootstrapUsernameLabel')}
+                value={bootstrapUsername}
+                autoComplete="off"
+                onChange={(event) => setBootstrapUsername(event.target.value)}
+                required
+              />
+              <Input
+                label={t('userManagement.bootstrapEmailLabel')}
+                value={bootstrapEmail}
+                placeholder={t('common.optional')}
+                autoComplete="off"
+                onChange={(event) => setBootstrapEmail(event.target.value)}
+              />
+              <Input
+                label={t('userManagement.bootstrapDisplayNameLabel')}
+                value={bootstrapDisplayName}
+                placeholder={t('common.optional')}
+                autoComplete="off"
+                onChange={(event) => setBootstrapDisplayName(event.target.value)}
+              />
+              <Input
+                label={t('userManagement.bootstrapPasswordLabel')}
+                type="password"
+                value={bootstrapPassword}
+                autoComplete="new-password"
+                onChange={(event) => setBootstrapPassword(event.target.value)}
+                required
+              />
+              <Input
+                label={t('userManagement.bootstrapConfirmPasswordLabel')}
+                type="password"
+                value={bootstrapConfirmPassword}
+                autoComplete="new-password"
+                onChange={(event) => setBootstrapConfirmPassword(event.target.value)}
+                required
+              />
+              <Button
+                type="submit"
+                loading={bootstrapSaving}
+                disabled={!bootstrapUsername || !bootstrapPassword || !bootstrapConfirmPassword}
+              >
+                {t('userManagement.bootstrapSubmit')}
+              </Button>
+            </form>
+          ) : (
+            <div className={styles.muted}>{t('userManagement.bootstrapRequiresManagementKey')}</div>
+          )}
+        </section>
+      ) : null}
+
+      {userManagementEnabled ? (
+        <section className={styles.panel}>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -350,9 +475,23 @@ export function UserManagementPage() {
                     </button>{' '}
                     {user.status === 'pending' ? (
                       <>
+                        <select
+                          value={approveRoleByUser[user.id] ?? 'user'}
+                          onChange={(event) =>
+                            setApproveRoleByUser((prev) => ({ ...prev, [user.id]: event.target.value }))
+                          }
+                          aria-label={t('userManagement.approveRoleLabel')}
+                        >
+                          <option value="user">{t('userManagement.roleUser')}</option>
+                          <option value="admin">{t('userManagement.roleAdmin')}</option>
+                        </select>{' '}
                         <button
                           type="button"
-                          onClick={() => void run(() => userAdminApi.approveUser(user.id))}
+                          onClick={() =>
+                            void run(() =>
+                              userAdminApi.approveUser(user.id, approveRoleByUser[user.id] ?? 'user')
+                            )
+                          }
                         >
                           {t('userManagement.actionApprove')}
                         </button>{' '}
@@ -381,12 +520,28 @@ export function UserManagementPage() {
                       </button>
                     ) : null}
                     {user.status === 'rejected' ? (
-                      <button
-                        type="button"
-                        onClick={() => void run(() => userAdminApi.approveUser(user.id))}
-                      >
-                        {t('userManagement.actionReApprove')}
-                      </button>
+                      <>
+                        <select
+                          value={approveRoleByUser[user.id] ?? 'user'}
+                          onChange={(event) =>
+                            setApproveRoleByUser((prev) => ({ ...prev, [user.id]: event.target.value }))
+                          }
+                          aria-label={t('userManagement.approveRoleLabel')}
+                        >
+                          <option value="user">{t('userManagement.roleUser')}</option>
+                          <option value="admin">{t('userManagement.roleAdmin')}</option>
+                        </select>{' '}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            void run(() =>
+                              userAdminApi.approveUser(user.id, approveRoleByUser[user.id] ?? 'user')
+                            )
+                          }
+                        >
+                          {t('userManagement.actionReApprove')}
+                        </button>
+                      </>
                     ) : null}{' '}
                     <button
                       type="button"
@@ -491,7 +646,7 @@ export function UserManagementPage() {
             </div>
           ) : null}
 
-          {recentUsage.length > 0 ? (
+          {recentUsageTotal > 0 ? (
             <div className={styles.panel}>
               <div className={styles.label}>{t('userManagement.recentRequests')}</div>
               <table className={styles.table}>
@@ -524,6 +679,22 @@ export function UserManagementPage() {
                   ))}
                 </tbody>
               </table>
+              <PaginationControls
+                page={recentUsagePage}
+                totalPages={recentUsageTotalPages}
+                onChange={setRecentUsagePage}
+                infoLabel={t('userManagement.paginationInfo', {
+                  current: recentUsagePage,
+                  total: recentUsageTotalPages,
+                  count: recentUsageTotal,
+                })}
+                labels={{
+                  first: t('userManagement.paginationFirst'),
+                  prev: t('userManagement.paginationPrev'),
+                  next: t('userManagement.paginationNext'),
+                  last: t('userManagement.paginationLast'),
+                }}
+              />
             </div>
           ) : null}
 

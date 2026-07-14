@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { IconGithub, IconBookOpen, IconExternalLink, IconCode } from '@/components/ui/icons';
@@ -12,7 +13,7 @@ import {
   useModelsStore,
   useThemeStore,
 } from '@/stores';
-import { configApi, versionApi } from '@/services/api';
+import { configApi, userSessionApi, versionApi } from '@/services/api';
 import { formatDateTimeValue } from '@/utils/format';
 import { classifyModels } from '@/utils/models';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
@@ -93,6 +94,10 @@ export function SystemPage() {
   const [requestLogTouched, setRequestLogTouched] = useState(false);
   const [requestLogSaving, setRequestLogSaving] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
 
   const versionTapCount = useRef(0);
   const versionTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,6 +169,27 @@ export function SystemPage() {
         showNotification(t('notification.login_storage_cleared'), 'success');
       },
     });
+  };
+
+  const handleChangePassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (newPassword !== confirmPassword) {
+      showNotification(t('userDashboard.passwordsNoMatch'), 'error');
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      await userSessionApi.changePassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      showNotification(t('userDashboard.passwordUpdated'), 'success');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : t('userDashboard.failedUpdatePassword');
+      showNotification(message, 'error');
+    } finally {
+      setPasswordSaving(false);
+    }
   };
 
   const openRequestLogModal = useCallback(() => {
@@ -451,6 +477,45 @@ export function SystemPage() {
             </div>
           )}
         </Card>
+
+        {auth.authMode === 'user' ? (
+          <Card title={t('system_info.change_password_title')}>
+            <p className={styles.sectionDescription}>{t('system_info.change_password_desc')}</p>
+            <form className={styles.section} onSubmit={handleChangePassword}>
+              <Input
+                label={t('userDashboard.currentPassword')}
+                type="password"
+                value={currentPassword}
+                autoComplete="current-password"
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                required
+              />
+              <Input
+                label={t('userDashboard.newPassword')}
+                type="password"
+                value={newPassword}
+                autoComplete="new-password"
+                onChange={(event) => setNewPassword(event.target.value)}
+                required
+              />
+              <Input
+                label={t('userDashboard.confirmNewPassword')}
+                type="password"
+                value={confirmPassword}
+                autoComplete="new-password"
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                required
+              />
+              <Button
+                type="submit"
+                loading={passwordSaving}
+                disabled={!currentPassword || !newPassword || !confirmPassword}
+              >
+                {t('userDashboard.updatePassword')}
+              </Button>
+            </form>
+          </Card>
+        ) : null}
 
         <Card title={t('system_info.clear_login_title')}>
           <p className={styles.sectionDescription}>{t('system_info.clear_login_desc')}</p>

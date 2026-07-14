@@ -4,7 +4,10 @@ import { userSessionApi, type ModelPolicy, type QuotaSummary, type UsageSummary,
 import { useAuthStore } from '@/stores';
 import { copyToClipboard } from '@/utils/clipboard';
 import { formatTokenCount } from '@/utils/format';
+import { PaginationControls } from '@/components/common/PaginationControls';
 import styles from './UserDashboardPage.module.scss';
+
+const USAGE_PAGE_SIZE = 20;
 
 function maskAPIKey(value: string): string {
   const trimmed = value.trim();
@@ -19,6 +22,7 @@ export function UserDashboardPage() {
   const [models, setModels] = useState<ModelPolicy | null>(null);
   const [quota, setQuota] = useState<QuotaSummary | null>(null);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
+  const [usagePage, setUsagePage] = useState(1);
   const [error, setError] = useState('');
   const [passwordMessage, setPasswordMessage] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -30,15 +34,22 @@ export function UserDashboardPage() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const [keyRes, modelRes, quotaRes, usageRes] = await Promise.all([
+      const [keyRes, modelRes, quotaRes] = await Promise.all([
         userSessionApi.apiKeys(),
         userSessionApi.models(),
         userSessionApi.quota(),
-        userSessionApi.usage(20),
       ]);
       setKeys(keyRes.api_keys);
       setModels(modelRes.model_policy);
       setQuota(quotaRes.quota);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('userDashboard.failedLoad'));
+    }
+  }, []);
+
+  const loadUsage = useCallback(async (page: number) => {
+    try {
+      const usageRes = await userSessionApi.usage(USAGE_PAGE_SIZE, (page - 1) * USAGE_PAGE_SIZE);
       setUsage(usageRes.usage);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('userDashboard.failedLoad'));
@@ -48,6 +59,12 @@ export function UserDashboardPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadUsage(usagePage);
+  }, [loadUsage, usagePage]);
+
+  const usageTotalPages = Math.max(1, Math.ceil((usage?.total ?? 0) / USAGE_PAGE_SIZE));
 
   const allowedModels = models?.allow_all ? ['All models'] : models?.models || [];
 
@@ -237,6 +254,24 @@ export function UserDashboardPage() {
               ))}
             </tbody>
           </table>
+          {(usage?.total ?? 0) > 0 ? (
+            <PaginationControls
+              page={usagePage}
+              totalPages={usageTotalPages}
+              onChange={setUsagePage}
+              infoLabel={t('userDashboard.paginationInfo', {
+                current: usagePage,
+                total: usageTotalPages,
+                count: usage?.total ?? 0,
+              })}
+              labels={{
+                first: t('userDashboard.paginationFirst'),
+                prev: t('userDashboard.paginationPrev'),
+                next: t('userDashboard.paginationNext'),
+                last: t('userDashboard.paginationLast'),
+              }}
+            />
+          ) : null}
         </section>
       </div>
     </div>

@@ -126,6 +126,7 @@
     "plugins": "Plugins",
     "plugin_store": "Plugin Store",
     "config_management": "Config Panel",
+    "users": "Users",
     "logs": "Logs Viewer",
     "system_info": "Management Center Info"
   },
@@ -146,6 +147,7 @@
     "plugin_store": "Discover & install plugins",
     "logs": "Request tracing",
     "config_management": "Gateway configuration",
+    "users": "Registration and quotas",
     "system_info": "Runtime & diagnostics"
   },
   "dashboard": {
@@ -1326,7 +1328,9 @@
     "clear_login_title": "Local Login Data",
     "clear_login_desc": "Clear locally saved login data and sign out.",
     "clear_login_button": "Clear login data",
-    "clear_login_confirm": "Clear local login data and sign out now?"
+    "clear_login_confirm": "Clear local login data and sign out now?",
+    "change_password_title": "Change Password",
+    "change_password_desc": "Verify your current password to set a new one."
   },
   "notification": {
     "debug_updated": "Debug settings updated",
@@ -1648,7 +1652,12 @@
     "colPrefill": "Pre-fill (cached)",
     "colReasoning": "Reasoning",
     "colCredits": "Credits",
-    "colLatency": "Latency (ms)"
+    "colLatency": "Latency (ms)",
+    "paginationFirst": "First",
+    "paginationPrev": "Prev",
+    "paginationNext": "Next",
+    "paginationLast": "Last",
+    "paginationInfo": "Page {{current}} / {{total}} · {{count}} records"
   },
   "userManagement": {
     "title": "User management",
@@ -1661,6 +1670,22 @@
     "disabled": "Disabled",
     "disabledNote": "User management is disabled",
     "disabledNoteDesc": "Existing flat API keys continue to authorize requests through the normal api-keys list.",
+    "bootstrapTitle": "Create Admin Account",
+    "bootstrapDescription": "Create an admin account that can sign in to the management panel with a username and password. This fails if an admin account already exists.",
+    "bootstrapUsernameLabel": "Username",
+    "bootstrapEmailLabel": "Email",
+    "bootstrapDisplayNameLabel": "Display name",
+    "bootstrapPasswordLabel": "Password",
+    "bootstrapConfirmPasswordLabel": "Confirm password",
+    "bootstrapSubmit": "Create admin account",
+    "bootstrapSuccess": "Admin account created successfully.",
+    "bootstrapConflict": "An admin account already exists.",
+    "bootstrapFailed": "Failed to create admin account.",
+    "bootstrapPasswordsNoMatch": "The passwords do not match.",
+    "bootstrapRequiresManagementKey": "Sign in with the management key to create an admin account.",
+    "approveRoleLabel": "Role",
+    "roleUser": "User",
+    "roleAdmin": "Admin",
     "colUser": "User",
     "colEmail": "Email",
     "colStatus": "Status",
@@ -1703,6 +1728,11 @@
     "colReasoning": "Reasoning",
     "colCredits": "Credits",
     "colLatency": "Latency (ms)",
+    "paginationFirst": "First",
+    "paginationPrev": "Prev",
+    "paginationNext": "Next",
+    "paginationLast": "Last",
+    "paginationInfo": "Page {{current}} / {{total}} · {{count}} records",
     "configPresent": "present",
     "configMissing": "missing",
     "pricingRulesTitle": "Pricing rules",

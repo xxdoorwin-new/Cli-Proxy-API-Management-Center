@@ -73,6 +73,7 @@ export interface UsageLedgerRow {
 export interface UsageSummary {
   quota: QuotaSummary;
   recent_usage: UsageLedgerRow[];
+  total: number;
 }
 
 export interface QuotaPolicy {
@@ -127,6 +128,13 @@ export const userSessionApi = {
 };
 
 export const userAdminApi = {
+  bootstrapAdmin: (payload: {
+    username: string;
+    password: string;
+    email?: string;
+    display_name?: string;
+  }) => apiClient.post<{ user: UserPrincipal }>('/v0/management/bootstrap', payload),
+
   getUserManagementSettings: () =>
     apiClient.get<UserManagementSettings>('/v0/management/user-management/settings'),
 
