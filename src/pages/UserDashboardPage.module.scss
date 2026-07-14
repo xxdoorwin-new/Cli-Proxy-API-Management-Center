@@ -151,6 +151,89 @@
   flex-wrap: wrap;
 }
 
+.assignmentLayout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.8fr) minmax(320px, 1.2fr);
+  gap: $spacing-md;
+
+  @media (max-width: $breakpoint-tablet) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.assignmentSummary,
+.assignmentPicker {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+  padding: $spacing-md;
+  background: var(--bg-secondary);
+}
+
+.assignmentTitle {
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.assignmentMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.keyChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: $spacing-xs;
+}
+
+.keyChoice {
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+  padding: $spacing-sm;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  cursor: pointer;
+  text-align: left;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+}
+
+.keyChoiceSelected {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.keyChoiceDisabled {
+  opacity: 0.62;
+}
+
+.stateBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+  padding: 0 8px;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .button,
 .buttonSmall {
   border: 1px solid var(--border-color);

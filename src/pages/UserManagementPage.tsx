@@ -3,7 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { userAdminApi, type ConfiguredAPIKey, type ModelPolicy, type PricingRule, type QuotaPolicy, type QuotaSummary, type UsageLedgerRow, type UserAPIKey } from '@/services/api';
+import {
+  userAdminApi,
+  type ConfiguredAPIKey,
+  type ModelPolicy,
+  type PricingRule,
+  type QuotaPolicy,
+  type QuotaSummary,
+  type UsageLedgerRow,
+  type UserAPIKey,
+} from '@/services/api';
 import { useAuthStore, useNotificationStore } from '@/stores';
 import type { ApiError, UserPrincipal } from '@/types';
 import { formatTokenCount } from '@/utils/format';
@@ -20,6 +29,18 @@ function localizeStatus(status: string, t: (key: string) => string): string {
     suspended: t('userManagement.statusSuspended'),
   };
   return map[status] ?? status;
+}
+
+function configuredKeyState(key: ConfiguredAPIKey, selectedUserID?: string) {
+  if (key.state) return key.state;
+  if (!key.assigned) return 'available';
+  return key.assigned_user_id && key.assigned_user_id === selectedUserID
+    ? 'assigned_to_selected_user'
+    : 'assigned_to_other_user';
+}
+
+function configuredKeyOwner(key: ConfiguredAPIKey): string {
+  return key.assigned_display_name || key.assigned_username || key.assigned_user_id || '';
 }
 
 export function UserManagementPage() {
@@ -43,7 +64,6 @@ export function UserManagementPage() {
   const [keys, setKeys] = useState<UserAPIKey[]>([]);
   const [configuredKeys, setConfiguredKeys] = useState<ConfiguredAPIKey[]>([]);
   const [selectedConfiguredKey, setSelectedConfiguredKey] = useState('');
-  const [bindingName, setBindingName] = useState('default');
   const [models, setModels] = useState('');
   const [quota, setQuota] = useState('0');
   const [quotaSummary, setQuotaSummary] = useState<QuotaSummary | null>(null);
@@ -149,7 +169,10 @@ export function UserManagementPage() {
         setSelectedUser(null);
         setKeys([]);
       }
-      showNotification(t('userManagement.deleteUserSuccess', { username: user.username }), 'success');
+      showNotification(
+        t('userManagement.deleteUserSuccess', { username: user.username }),
+        'success'
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('userManagement.deleteUserFailed');
       showNotification(msg, 'error');
@@ -202,7 +225,11 @@ export function UserManagementPage() {
 
   const loadRecentUsage = useCallback(async (userId: string, page: number) => {
     try {
-      const usageRes = await userAdminApi.getUserUsage(userId, RECENT_USAGE_PAGE_SIZE, (page - 1) * RECENT_USAGE_PAGE_SIZE);
+      const usageRes = await userAdminApi.getUserUsage(
+        userId,
+        RECENT_USAGE_PAGE_SIZE,
+        (page - 1) * RECENT_USAGE_PAGE_SIZE
+      );
       setRecentUsage(usageRes.usage?.recent_usage ?? []);
       setRecentUsageTotal(usageRes.usage?.total ?? 0);
     } catch {
@@ -217,7 +244,7 @@ export function UserManagementPage() {
     try {
       const [keyRes, configuredRes, modelPolicyRes, quotaPolicyRes] = await Promise.allSettled([
         userAdminApi.listUserKeys(user.id),
-        userAdminApi.listConfiguredKeys(),
+        userAdminApi.listConfiguredKeys(user.id),
         userAdminApi.getUserModelPolicy(user.id),
         userAdminApi.getUserQuotaPolicy(user.id),
       ]);
@@ -226,7 +253,9 @@ export function UserManagementPage() {
       }
       if (configuredRes.status === 'fulfilled') {
         setConfiguredKeys(configuredRes.value.api_keys);
-        const nextAvailable = configuredRes.value.api_keys.find((key) => !key.assigned);
+        const nextAvailable = configuredRes.value.api_keys.find(
+          (key) => configuredKeyState(key, user.id) === 'available'
+        );
         setSelectedConfiguredKey(nextAvailable?.fingerprint ?? '');
       }
       if (modelPolicyRes.status === 'fulfilled') {
@@ -261,13 +290,20 @@ export function UserManagementPage() {
     if (!selectedUser) return;
     const [keyRes, configuredRes] = await Promise.all([
       userAdminApi.listUserKeys(selectedUser.id),
-      userAdminApi.listConfiguredKeys(),
+      userAdminApi.listConfiguredKeys(selectedUser.id),
     ]);
     setKeys(keyRes.api_keys);
     setConfiguredKeys(configuredRes.api_keys);
-    const nextAvailable = configuredRes.api_keys.find((key) => !key.assigned);
+    const nextAvailable = configuredRes.api_keys.find(
+      (key) => configuredKeyState(key, selectedUser.id) === 'available'
+    );
     setSelectedConfiguredKey((current) =>
-      current && configuredRes.api_keys.some((key) => key.fingerprint === current && !key.assigned)
+      current &&
+      configuredRes.api_keys.some(
+        (key) =>
+          key.fingerprint === current &&
+          configuredKeyState(key, selectedUser.id) !== 'assigned_to_other_user'
+      )
         ? current
         : (nextAvailable?.fingerprint ?? '')
     );
@@ -275,11 +311,7 @@ export function UserManagementPage() {
 
   const bindKey = async () => {
     if (!selectedUser || !selectedConfiguredKey) return;
-    await userAdminApi.bindUserKey(
-      selectedUser.id,
-      selectedConfiguredKey,
-      bindingName || 'default'
-    );
+    await userAdminApi.bindUserKey(selectedUser.id, selectedConfiguredKey, '');
     await refreshSelectedUserKeys();
   };
 
@@ -291,7 +323,10 @@ export function UserManagementPage() {
       .filter(Boolean);
     // If no models specified, allow all; otherwise restrict to the listed models.
     const allowAll = list.length === 0;
-    await userAdminApi.setUserModelPolicy(selectedUser.id, { allow_all: allowAll, models: allowAll ? [] : list });
+    await userAdminApi.setUserModelPolicy(selectedUser.id, {
+      allow_all: allowAll,
+      models: allowAll ? [] : list,
+    });
   };
 
   const saveQuota = async () => {
@@ -341,6 +376,17 @@ export function UserManagementPage() {
   };
 
   const recentUsageTotalPages = Math.max(1, Math.ceil(recentUsageTotal / RECENT_USAGE_PAGE_SIZE));
+  const currentAssignment = keys[0] ?? null;
+  const selectedConfigured = configuredKeys.find(
+    (key) => key.fingerprint === selectedConfiguredKey
+  );
+  const selectedConfiguredState = selectedConfigured
+    ? configuredKeyState(selectedConfigured, selectedUser?.id)
+    : 'available';
+  const selectedConfiguredOccupied = selectedConfiguredState === 'assigned_to_other_user';
+  const canSubmitAssignment = Boolean(
+    selectedUser && selectedConfiguredKey && !selectedConfiguredOccupied
+  );
 
   return (
     <div className={styles.container}>
@@ -362,7 +408,9 @@ export function UserManagementPage() {
             disabled={settingsLoading || settingsSaving}
             onChange={(enabled) => void toggleUserManagement(enabled)}
             ariaLabel="Toggle user management"
-            label={userManagementEnabled ? t('userManagement.enabled') : t('userManagement.disabled')}
+            label={
+              userManagementEnabled ? t('userManagement.enabled') : t('userManagement.disabled')
+            }
             labelPosition="left"
           />
         </div>
@@ -478,7 +526,10 @@ export function UserManagementPage() {
                         <select
                           value={approveRoleByUser[user.id] ?? 'user'}
                           onChange={(event) =>
-                            setApproveRoleByUser((prev) => ({ ...prev, [user.id]: event.target.value }))
+                            setApproveRoleByUser((prev) => ({
+                              ...prev,
+                              [user.id]: event.target.value,
+                            }))
                           }
                           aria-label={t('userManagement.approveRoleLabel')}
                         >
@@ -489,7 +540,10 @@ export function UserManagementPage() {
                           type="button"
                           onClick={() =>
                             void run(() =>
-                              userAdminApi.approveUser(user.id, approveRoleByUser[user.id] ?? 'user')
+                              userAdminApi.approveUser(
+                                user.id,
+                                approveRoleByUser[user.id] ?? 'user'
+                              )
                             )
                           }
                         >
@@ -524,7 +578,10 @@ export function UserManagementPage() {
                         <select
                           value={approveRoleByUser[user.id] ?? 'user'}
                           onChange={(event) =>
-                            setApproveRoleByUser((prev) => ({ ...prev, [user.id]: event.target.value }))
+                            setApproveRoleByUser((prev) => ({
+                              ...prev,
+                              [user.id]: event.target.value,
+                            }))
                           }
                           aria-label={t('userManagement.approveRoleLabel')}
                         >
@@ -535,7 +592,10 @@ export function UserManagementPage() {
                           type="button"
                           onClick={() =>
                             void run(() =>
-                              userAdminApi.approveUser(user.id, approveRoleByUser[user.id] ?? 'user')
+                              userAdminApi.approveUser(
+                                user.id,
+                                approveRoleByUser[user.id] ?? 'user'
+                              )
                             )
                           }
                         >
@@ -548,7 +608,9 @@ export function UserManagementPage() {
                       onClick={() =>
                         showConfirmation({
                           title: t('userManagement.deleteUserTitle'),
-                          message: t('userManagement.deleteUserMessage', { username: user.username }),
+                          message: t('userManagement.deleteUserMessage', {
+                            username: user.username,
+                          }),
                           confirmText: t('userManagement.actionDeleteUser'),
                           variant: 'danger',
                           onConfirm: () => handleDeleteUser(user),
@@ -571,31 +633,129 @@ export function UserManagementPage() {
           <div className={styles.value}>{selectedUser.username}</div>
           <div className={styles.muted}>{selectedUser.email}</div>
 
-          <div className={styles.grid}>
-            <div className={styles.panel}>
-              <div className={styles.label}>{t('userManagement.bindKeyLabel')}</div>
-              <select
-                value={selectedConfiguredKey}
-                onChange={(event) => setSelectedConfiguredKey(event.target.value)}
-              >
-                <option value="">{t('userManagement.bindKeySelect')}</option>
-                {configuredKeys.map((key) => (
-                  <option key={key.fingerprint} value={key.fingerprint} disabled={key.assigned}>
-                    {key.prefix}
-                    {key.assigned ? ` (${key.assigned_key_name || key.assigned_user_id})` : ''}
-                  </option>
-                ))}
-              </select>
-              <input value={bindingName} onChange={(event) => setBindingName(event.target.value)} />
-              <button
-                type="button"
-                disabled={!selectedConfiguredKey}
-                onClick={() => void run(bindKey)}
-              >
-                {t('userManagement.actionBindKey')}
-              </button>
+          <div className={styles.assignmentLayout}>
+            <div className={styles.assignmentSummary}>
+              <div className={styles.label}>{t('userManagement.currentAssignment')}</div>
+              {currentAssignment ? (
+                <>
+                  <div className={styles.assignmentTitle}>{currentAssignment.name}</div>
+                  <div className={styles.assignmentMeta}>
+                    <span className={styles.monospace}>{currentAssignment.prefix}</span>
+                    <span>{localizeStatus(currentAssignment.status, t)}</span>
+                    <span>
+                      {currentAssignment.configured_key_present
+                        ? t('userManagement.configPresent')
+                        : t('userManagement.configMissing')}
+                    </span>
+                  </div>
+                  <div className={styles.formActions}>
+                    {currentAssignment.status === 'active' ? (
+                      <button
+                        type="button"
+                        className={styles.buttonSmall}
+                        onClick={() =>
+                          void run(async () => {
+                            if (!selectedUser) return;
+                            await userAdminApi.disableUserKey(
+                              selectedUser.id,
+                              currentAssignment.id
+                            );
+                            await refreshSelectedUserKeys();
+                          })
+                        }
+                      >
+                        {t('userManagement.actionDisable')}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.buttonSmall}
+                        onClick={() =>
+                          void run(async () => {
+                            if (!selectedUser) return;
+                            await userAdminApi.enableUserKey(selectedUser.id, currentAssignment.id);
+                            await refreshSelectedUserKeys();
+                          })
+                        }
+                      >
+                        {t('userManagement.actionEnable')}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.buttonSmall}
+                      onClick={() =>
+                        void run(async () => {
+                          if (!selectedUser) return;
+                          await userAdminApi.unbindUserKey(selectedUser.id, currentAssignment.id);
+                          await refreshSelectedUserKeys();
+                        })
+                      }
+                    >
+                      {t('userManagement.actionUnbind')}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className={styles.assignmentTitle}>{t('userManagement.unassigned')}</div>
+                  <div className={styles.muted}>{t('userManagement.unassignedHint')}</div>
+                </>
+              )}
             </div>
 
+            <div className={styles.assignmentPicker}>
+              <div className={styles.label}>
+                {currentAssignment
+                  ? t('userManagement.replaceKeyLabel')
+                  : t('userManagement.bindKeyLabel')}
+              </div>
+              <div className={styles.keyChoiceGrid}>
+                {configuredKeys.map((key) => {
+                  const state = configuredKeyState(key, selectedUser.id);
+                  const occupied = state === 'assigned_to_other_user';
+                  const selected = key.fingerprint === selectedConfiguredKey;
+                  return (
+                    <button
+                      key={key.fingerprint}
+                      type="button"
+                      className={[
+                        styles.keyChoice,
+                        selected ? styles.keyChoiceSelected : '',
+                        occupied ? styles.keyChoiceDisabled : '',
+                      ].join(' ')}
+                      disabled={occupied}
+                      onClick={() => {
+                        setSelectedConfiguredKey(key.fingerprint);
+                      }}
+                    >
+                      <span className={styles.monospace}>{key.prefix}</span>
+                      <span className={styles.stateBadge}>
+                        {t(`userManagement.assignmentState.${state}`)}
+                      </span>
+                      {occupied ? (
+                        <span className={styles.muted}>
+                          {t('userManagement.occupiedBy', { owner: configuredKeyOwner(key) })}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                className={styles.button}
+                disabled={!canSubmitAssignment}
+                onClick={() => void run(bindKey)}
+              >
+                {currentAssignment
+                  ? t('userManagement.actionReplaceKey')
+                  : t('userManagement.actionBindKey')}
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.grid}>
             <div className={styles.panel}>
               <div className={styles.label}>{t('userManagement.allowedModels')}</div>
               <input
@@ -610,7 +770,11 @@ export function UserManagementPage() {
 
             <div className={styles.panel}>
               <div className={styles.label}>{t('userManagement.monthlyCredits')}</div>
-              <input value={quota} onChange={(event) => setQuota(event.target.value)} placeholder={t('userManagement.quotaUnlimitedHint')} />
+              <input
+                value={quota}
+                onChange={(event) => setQuota(event.target.value)}
+                placeholder={t('userManagement.quotaUnlimitedHint')}
+              />
               <button type="button" onClick={() => void run(saveQuota)}>
                 {t('userManagement.actionSaveQuota')}
               </button>
@@ -620,7 +784,8 @@ export function UserManagementPage() {
           {quotaSummary ? (
             <div className={styles.panel}>
               <div className={styles.label}>
-                {t('userManagement.quotaUsage')} <span className={styles.muted}>{t('userManagement.quotaUsageHint')}</span>
+                {t('userManagement.quotaUsage')}{' '}
+                <span className={styles.muted}>{t('userManagement.quotaUsageHint')}</span>
               </div>
               <table className={styles.table}>
                 <thead>
@@ -633,9 +798,15 @@ export function UserManagementPage() {
                 </thead>
                 <tbody>
                   <tr>
-                    <td>{quotaSummary.limit_credits === 0 ? t('userManagement.quotaUnlimited') : quotaSummary.limit_credits}</td>
+                    <td>
+                      {quotaSummary.limit_credits === 0
+                        ? t('userManagement.quotaUnlimited')
+                        : quotaSummary.limit_credits}
+                    </td>
                     <td>{quotaSummary.used_credits}</td>
-                    <td>{quotaSummary.limit_credits === 0 ? '∞' : quotaSummary.remaining_credits}</td>
+                    <td>
+                      {quotaSummary.limit_credits === 0 ? '∞' : quotaSummary.remaining_credits}
+                    </td>
                     <td>
                       {new Date(quotaSummary.period_start).toLocaleDateString()} –{' '}
                       {new Date(quotaSummary.period_end).toLocaleDateString()}
@@ -697,69 +868,6 @@ export function UserManagementPage() {
               />
             </div>
           ) : null}
-
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>{t('userManagement.colName')}</th>
-                <th>{t('userManagement.colPrefix')}</th>
-                <th>{t('userManagement.colStatus')}</th>
-                <th>{t('userManagement.colConfig')}</th>
-                <th>{t('userManagement.colActions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {keys.map((key) => (
-                <tr key={key.id}>
-                  <td>{key.name}</td>
-                  <td>{key.prefix}</td>
-                  <td>{key.status}</td>
-                  <td>{key.configured_key_present ? t('userManagement.configPresent') : t('userManagement.configMissing')}</td>
-                  <td>
-                    {key.status === 'active' ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void run(async () => {
-                            if (!selectedUser) return;
-                            await userAdminApi.disableUserKey(selectedUser.id, key.id);
-                            await refreshSelectedUserKeys();
-                          })
-                        }
-                      >
-                        {t('userManagement.actionDisable')}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          void run(async () => {
-                            if (!selectedUser) return;
-                            await userAdminApi.enableUserKey(selectedUser.id, key.id);
-                            await refreshSelectedUserKeys();
-                          })
-                        }
-                      >
-                        {t('userManagement.actionEnable')}
-                      </button>
-                    )}{' '}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void run(async () => {
-                          if (!selectedUser) return;
-                          await userAdminApi.unbindUserKey(selectedUser.id, key.id);
-                          await refreshSelectedUserKeys();
-                        })
-                      }
-                    >
-                      {t('userManagement.actionUnbind')}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
         </section>
       ) : null}
 
@@ -796,7 +904,10 @@ export function UserManagementPage() {
                       <button type="button" onClick={() => editPricingRule(rule)}>
                         {t('userManagement.actionEdit')}
                       </button>{' '}
-                      <button type="button" onClick={() => void run(() => deletePricingRule(rule.model))}>
+                      <button
+                        type="button"
+                        onClick={() => void run(() => deletePricingRule(rule.model))}
+                      >
                         {t('userManagement.actionDelete')}
                       </button>
                     </td>
@@ -806,11 +917,17 @@ export function UserManagementPage() {
             </table>
           ) : null}
 
-          <div className={styles.label} style={{ marginTop: '0.75rem' }}>{t('userManagement.pricingRuleForm')}</div>
+          <div className={styles.label} style={{ marginTop: '0.75rem' }}>
+            {t('userManagement.pricingRuleForm')}
+          </div>
           <div className={styles.grid}>
             <div className={styles.panel}>
               <div className={styles.muted}>{t('userManagement.pricingModelLabel')}</div>
-              <input value={prModel} onChange={(e) => setPrModel(e.target.value)} placeholder={t('userManagement.pricingModelPlaceholder')} />
+              <input
+                value={prModel}
+                onChange={(e) => setPrModel(e.target.value)}
+                placeholder={t('userManagement.pricingModelPlaceholder')}
+              />
             </div>
             <div className={styles.panel}>
               <div className={styles.muted}>{t('userManagement.pricingInput')}</div>
@@ -837,7 +954,11 @@ export function UserManagementPage() {
               <input value={prRequest} onChange={(e) => setPrRequest(e.target.value)} />
             </div>
           </div>
-          <button type="button" disabled={!prModel.trim()} onClick={() => void run(savePricingRule)}>
+          <button
+            type="button"
+            disabled={!prModel.trim()}
+            onClick={() => void run(savePricingRule)}
+          >
             {t('userManagement.pricingSave')}
           </button>
         </section>

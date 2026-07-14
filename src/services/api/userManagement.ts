@@ -19,11 +19,15 @@ export interface UserAPIKey {
 export interface ConfiguredAPIKey {
   fingerprint: string;
   prefix: string;
+  state?: 'available' | 'assigned_to_selected_user' | 'assigned_to_other_user';
   assigned: boolean;
   assigned_user_id?: string;
+  assigned_username?: string;
+  assigned_display_name?: string;
   assigned_key_id?: string;
   assigned_key_name?: string;
   assigned_status?: string;
+  selected_user_id?: string;
   last_used_at?: string;
   configured_present: boolean;
 }
@@ -172,8 +176,12 @@ export const userAdminApi = {
   listUserKeys: (userID: string) =>
     apiClient.get<{ api_keys: UserAPIKey[] }>(`/v0/management/users/${userID}/api-keys`),
 
-  listConfiguredKeys: () =>
-    apiClient.get<{ api_keys: ConfiguredAPIKey[] }>('/v0/management/configured-api-keys'),
+  listConfiguredKeys: (userID?: string) => {
+    const qs = userID ? `?user_id=${encodeURIComponent(userID)}` : '';
+    return apiClient.get<{ api_keys: ConfiguredAPIKey[] }>(
+      `/v0/management/configured-api-keys${qs}`
+    );
+  },
 
   bindUserKey: (userID: string, configuredKeyFingerprint: string, name: string) =>
     apiClient.post<{ api_key: UserAPIKey }>(`/v0/management/users/${userID}/api-keys`, {
@@ -192,13 +200,15 @@ export const userAdminApi = {
     ),
 
   unbindUserKey: (userID: string, keyID: string) =>
-    apiClient.delete<{ status: string }>(`/v0/management/users/${userID}/api-keys/${keyID}`),
+    apiClient.delete<{ api_key: UserAPIKey }>(`/v0/management/users/${userID}/api-keys/${keyID}`),
 
   getUserQuotaSummary: (userID: string) =>
     apiClient.get<{ quota: QuotaSummary }>(`/v0/management/users/${userID}/quota-summary`),
 
   getUserUsage: (userID: string, limit = 20, offset = 0) =>
-    apiClient.get<{ usage: UsageSummary }>(`/v0/management/users/${userID}/usage?limit=${limit}&offset=${offset}`),
+    apiClient.get<{ usage: UsageSummary }>(
+      `/v0/management/users/${userID}/usage?limit=${limit}&offset=${offset}`
+    ),
 
   getUserModelPolicy: (userID: string) =>
     apiClient.get<{ model_policy: ModelPolicy }>(`/v0/management/users/${userID}/model-policy`),
@@ -225,5 +235,7 @@ export const userAdminApi = {
     apiClient.put<{ pricing_rule: PricingRule }>('/v0/management/pricing-rules', rule),
 
   deletePricingRule: (model: string) =>
-    apiClient.delete<{ status: string }>(`/v0/management/pricing-rules?model=${encodeURIComponent(model)}`),
+    apiClient.delete<{ status: string }>(
+      `/v0/management/pricing-rules?model=${encodeURIComponent(model)}`
+    ),
 };
