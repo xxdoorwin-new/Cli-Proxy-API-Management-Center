@@ -46,6 +46,8 @@ export type AuthMode = 'management' | 'user' | null;
 export interface AuthState {
   isAuthenticated: boolean;
   authMode: AuthMode;
+  /** Which login page to return to after logout/session-expiry; persists across logout. */
+  lastAuthMode: 'management' | 'user';
   apiBase: string;
   managementKey: string;
   userSessionToken: string;

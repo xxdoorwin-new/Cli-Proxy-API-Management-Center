@@ -9,6 +9,7 @@ export function ProtectedRoute({ children }: { children: ReactElement }) {
   const managementKey = useAuthStore((state) => state.managementKey);
   const apiBase = useAuthStore((state) => state.apiBase);
   const checkAuth = useAuthStore((state) => state.checkAuth);
+  const lastAuthMode = useAuthStore((state) => state.lastAuthMode);
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export function ProtectedRoute({ children }: { children: ReactElement }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+    return <Navigate to={`/login/${lastAuthMode}`} replace state={{ from: location }} />;
   }
 
   return children;

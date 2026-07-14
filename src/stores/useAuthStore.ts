@@ -61,6 +61,7 @@ export const useAuthStore = create<AuthStoreState>()(
       // 初始状态
       isAuthenticated: false,
       authMode: null,
+      lastAuthMode: 'management',
       apiBase: '',
       managementKey: '',
       userSessionToken: '',
@@ -163,6 +164,7 @@ export const useAuthStore = create<AuthStoreState>()(
           set({
             isAuthenticated: true,
             authMode: 'management',
+            lastAuthMode: 'management',
             apiBase,
             managementKey,
             userSessionToken: '',
@@ -215,6 +217,7 @@ export const useAuthStore = create<AuthStoreState>()(
           set({
             isAuthenticated: true,
             authMode: 'user',
+            lastAuthMode: 'user',
             apiBase,
             managementKey: '',
             userSessionToken: token,
@@ -303,6 +306,7 @@ export const useAuthStore = create<AuthStoreState>()(
             set({
               isAuthenticated: true,
               authMode: 'user',
+              lastAuthMode: 'user',
               currentUser: session.user,
               connectionStatus: 'connected',
               ...(runtimeKind !== 'unknown' ? { serverRuntimeKind: runtimeKind } : {})
@@ -316,6 +320,7 @@ export const useAuthStore = create<AuthStoreState>()(
           set({
             isAuthenticated: true,
             authMode: 'management',
+            lastAuthMode: 'management',
             connectionStatus: 'connected',
             ...(runtimeKind !== 'unknown' ? { serverRuntimeKind: runtimeKind } : {})
           });
@@ -372,6 +377,7 @@ export const useAuthStore = create<AuthStoreState>()(
       })),
       partialize: (state) => ({
         authMode: state.authMode,
+        lastAuthMode: state.lastAuthMode,
         apiBase: state.apiBase,
         ...(state.rememberPassword ? { managementKey: state.managementKey } : {}),
         ...(state.rememberPassword ? { userSessionToken: state.userSessionToken } : {}),
