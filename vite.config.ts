@@ -40,6 +40,7 @@ export default defineConfig({
   plugins: [
     react(),
     viteSingleFile({
+      useRecommendedBuildConfig: false,
       removeViteModuleLoader: true
     })
   ],

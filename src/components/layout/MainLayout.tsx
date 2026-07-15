@@ -56,6 +56,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   pluginStore: <IconSidebarStore size={18} />,
   config: <IconSidebarConfig size={18} />,
   users: <IconSidebarSystem size={18} />,
+  traffic: <IconSidebarLogs size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
 };
@@ -535,6 +536,12 @@ export function MainLayout() {
                     metaKey: 'nav_meta.quota_management',
                     icon: sidebarIcons.quota,
                   },
+                  {
+                    path: '/traffic-statistics',
+                    labelKey: 'nav.traffic_statistics',
+                    metaKey: 'nav_meta.traffic_statistics',
+                    icon: sidebarIcons.traffic,
+                  },
                 ]
               : []),
           ],
@@ -610,6 +617,12 @@ export function MainLayout() {
           labelKey: 'nav.users',
           metaKey: 'nav_meta.users',
           icon: sidebarIcons.users,
+        },
+        {
+          path: '/traffic-statistics',
+          labelKey: 'nav.traffic_statistics',
+          metaKey: 'nav_meta.traffic_statistics',
+          icon: sidebarIcons.traffic,
         },
         ...(supportsPlugin
           ? [

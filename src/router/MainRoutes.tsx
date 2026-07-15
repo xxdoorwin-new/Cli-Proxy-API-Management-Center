@@ -6,6 +6,7 @@ import { AuthFilesOAuthExcludedEditPage } from '@/pages/AuthFilesOAuthExcludedEd
 import { AuthFilesOAuthModelAliasEditPage } from '@/pages/AuthFilesOAuthModelAliasEditPage';
 import { OAuthPage } from '@/pages/OAuthPage';
 import { QuotaPage } from '@/pages/QuotaPage';
+import { TrafficStatisticsPage } from '@/pages/TrafficStatisticsPage';
 import { PluginResourcePage } from '@/features/plugins/PluginResourcePage';
 import { PluginsPage } from '@/features/plugins/PluginsPage';
 import { PluginStorePage } from '@/features/plugins/PluginStorePage';
@@ -21,6 +22,7 @@ const createUserRoutes = () => [
   { path: '/dashboard', element: <UserDashboardPage /> },
   { path: '/user-dashboard', element: <UserDashboardPage /> },
   { path: '/quota', element: <QuotaPage /> },
+  { path: '/traffic-statistics', element: <TrafficStatisticsPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 
@@ -51,6 +53,7 @@ const createMainRoutes = (supportsPlugin: boolean) => [
   { path: '/config', element: <ConfigPage /> },
   { path: '/logs', element: <LogsPage /> },
   { path: '/users', element: <UserManagementPage /> },
+  { path: '/traffic-statistics', element: <TrafficStatisticsPage /> },
   { path: '/system', element: <SystemPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ];

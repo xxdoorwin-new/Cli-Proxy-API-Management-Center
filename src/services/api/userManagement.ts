@@ -66,6 +66,7 @@ export interface UsageLedgerRow {
   output_tokens: number;
   cached_tokens: number;
   reasoning_tokens: number;
+  total_tokens: number;
   image_count: number;
   credit_cost: number;
   status: string;
@@ -78,6 +79,80 @@ export interface UsageSummary {
   quota: QuotaSummary;
   recent_usage: UsageLedgerRow[];
   total: number;
+}
+
+export type TrafficMetric = 'tokens' | 'credits' | 'requests';
+export type TrafficGroupBy = 'provider' | 'model';
+
+export interface TrafficSummary {
+  total_tokens: number;
+  total_credits: number;
+  requests: number;
+  active_users: number;
+  failed_requests: number;
+}
+
+export interface TrafficUserRanking {
+  user_id: string;
+  username: string;
+  display_name?: string;
+  total_tokens: number;
+  total_credits: number;
+  requests: number;
+}
+
+export interface TrafficDailyPoint {
+  date: string;
+  total_tokens: number;
+  total_credits: number;
+  requests: number;
+}
+
+export interface TrafficSeries {
+  key: string;
+  provider?: string;
+  model?: string;
+  other?: boolean;
+  total_tokens: number;
+  total_credits: number;
+  requests: number;
+  points: TrafficDailyPoint[];
+}
+
+export interface TrafficStatistics {
+  period_start: string;
+  period_end: string;
+  time_zone: string;
+  summary: TrafficSummary;
+  ranking?: TrafficUserRanking[];
+  daily: TrafficDailyPoint[];
+  series: TrafficSeries[];
+  providers: string[];
+  models: string[];
+  has_estimated_total: boolean;
+}
+
+export interface TrafficStatisticsParams {
+  from?: string;
+  to?: string;
+  timeZone?: string;
+  provider?: string;
+  model?: string;
+  status?: string;
+  groupBy?: TrafficGroupBy;
+}
+
+function trafficStatisticsQuery(params: TrafficStatisticsParams = {}): string {
+  const search = new URLSearchParams();
+  const timeZone = params.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  if (timeZone) search.set('time_zone', timeZone);
+  if (params.provider) search.set('provider', params.provider);
+  if (params.model) search.set('model', params.model);
+  if (params.status) search.set('status', params.status);
+  if (params.groupBy) search.set('group_by', params.groupBy);
+  return search.toString();
 }
 
 export interface QuotaPolicy {
@@ -129,6 +204,13 @@ export const userSessionApi = {
 
   usage: (limit = 50, offset = 0) =>
     apiClient.get<{ usage: UsageSummary }>(`/v0/user/usage?limit=${limit}&offset=${offset}`),
+
+  trafficStatistics: (params: TrafficStatisticsParams = {}) => {
+    const qs = trafficStatisticsQuery(params);
+    return apiClient.get<{ traffic: TrafficStatistics }>(
+      `/v0/user/traffic-statistics${qs ? `?${qs}` : ''}`
+    );
+  },
 };
 
 export const userAdminApi = {
@@ -209,6 +291,13 @@ export const userAdminApi = {
     apiClient.get<{ usage: UsageSummary }>(
       `/v0/management/users/${userID}/usage?limit=${limit}&offset=${offset}`
     ),
+
+  trafficStatistics: (params: TrafficStatisticsParams = {}) => {
+    const qs = trafficStatisticsQuery(params);
+    return apiClient.get<{ traffic: TrafficStatistics }>(
+      `/v0/management/traffic-statistics${qs ? `?${qs}` : ''}`
+    );
+  },
 
   getUserModelPolicy: (userID: string) =>
     apiClient.get<{ model_policy: ModelPolicy }>(`/v0/management/users/${userID}/model-policy`),
