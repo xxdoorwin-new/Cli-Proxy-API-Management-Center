@@ -83,6 +83,7 @@ export interface UsageSummary {
 
 export type TrafficMetric = 'tokens' | 'credits' | 'requests';
 export type TrafficGroupBy = 'provider' | 'model';
+export type TrafficGranularity = 'day' | 'hour';
 
 export interface TrafficSummary {
   total_tokens: number;
@@ -92,6 +93,16 @@ export interface TrafficSummary {
   failed_requests: number;
 }
 
+export interface TrafficUserRankingSeries {
+  key: string;
+  provider?: string;
+  model?: string;
+  other?: boolean;
+  total_tokens: number;
+  total_credits: number;
+  requests: number;
+}
+
 export interface TrafficUserRanking {
   user_id: string;
   username: string;
@@ -99,6 +110,7 @@ export interface TrafficUserRanking {
   total_tokens: number;
   total_credits: number;
   requests: number;
+  series?: TrafficUserRankingSeries[];
 }
 
 export interface TrafficDailyPoint {
@@ -123,6 +135,7 @@ export interface TrafficStatistics {
   period_start: string;
   period_end: string;
   time_zone: string;
+  granularity: string;
   summary: TrafficSummary;
   ranking?: TrafficUserRanking[];
   daily: TrafficDailyPoint[];
@@ -140,6 +153,7 @@ export interface TrafficStatisticsParams {
   model?: string;
   status?: string;
   groupBy?: TrafficGroupBy;
+  granularity?: TrafficGranularity;
 }
 
 function trafficStatisticsQuery(params: TrafficStatisticsParams = {}): string {
@@ -152,6 +166,7 @@ function trafficStatisticsQuery(params: TrafficStatisticsParams = {}): string {
   if (params.model) search.set('model', params.model);
   if (params.status) search.set('status', params.status);
   if (params.groupBy) search.set('group_by', params.groupBy);
+  if (params.granularity) search.set('granularity', params.granularity);
   return search.toString();
 }
 

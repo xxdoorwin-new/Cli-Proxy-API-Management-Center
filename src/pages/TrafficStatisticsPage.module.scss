@@ -101,16 +101,31 @@
 .sectionHeader span { font-size: 0.82rem; }
 .metricControl { min-width: 160px; }
 
+.trendControls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+
+.chartNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 200px;
+}
+
+.chartNavLabel {
+  min-width: 130px;
+  color: var(--text-primary, #24211e);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
 .tableWrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; color: var(--text-primary, #24211e); }
 .table th, .table td { padding: 11px 10px; border-bottom: 1px solid var(--border, #e1ddd7); text-align: left; white-space: nowrap; }
 .table th { color: var(--text-muted, #756e67); font-size: 0.76rem; font-weight: 600; }
 .table td small { display: block; margin-top: 3px; color: var(--text-muted, #756e67); font-size: 0.75rem; }
 
-.chartBlock { width: 100%; overflow-x: auto; }
-.chart { display: block; width: 100%; min-width: 650px; height: 260px; overflow: visible; }
-.chartAxis { stroke: var(--border, #d8d2ca); stroke-width: 1; }
-.chartLabel { fill: var(--text-muted, #756e67); font-size: 10px; }
+.chartBlock { width: 100%; }
+.chartCanvas { width: 100%; height: 260px; }
+.chartNote { margin-bottom: 8px; color: var(--text-muted, #756e67); font-size: 0.78rem; }
 .chartLegend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-bottom: 8px; color: var(--text-muted, #756e67); font-size: 0.8rem; }
 .legendItem { display: inline-flex; align-items: center; gap: 6px; }
 .legendSwatch { width: 9px; height: 9px; border-radius: 50%; }
@@ -128,4 +143,6 @@
   .sectionHeader { flex-direction: column; }
   .metricControl { width: 100%; }
   .metricControl select { width: 100%; }
+  .trendControls { width: 100%; flex-direction: column; align-items: stretch; }
+  .chartNav { justify-content: space-between; }
 }

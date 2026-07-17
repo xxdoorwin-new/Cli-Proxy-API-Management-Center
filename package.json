@@ -23,6 +23,7 @@
     "react-dom": "^19.2.1",
     "react-i18next": "^17.0.8",
     "react-router-dom": "^7.10.1",
+    "recharts": "^3.9.2",
     "yaml": "^2.8.2",
     "zustand": "^5.0.9"
   },
