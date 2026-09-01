@@ -83,6 +83,37 @@ export function normalizeModelList(payload: unknown, { dedupe = false } = {}): M
   });
 }
 
+/**
+ * Filters models returned by a shared upstream catalog for a selected provider.
+ *
+ * Some OpenAI-compatible upstreams expose models from multiple proxy channels
+ * through the same models endpoint. Provider discovery must not offer models
+ * from another channel just because credentials share that endpoint.
+ */
+export function filterModelsForProvider(
+  models: ModelInfo[] = [],
+  provider?: string
+): ModelInfo[] {
+  const normalizedProvider = (provider ?? '').trim().toLowerCase();
+  if (normalizedProvider !== 'codex' && normalizedProvider !== 'claude') {
+    return models;
+  }
+
+  return models.filter((model) => {
+    const name = (model?.name ?? '').trim();
+    if (!name) return false;
+
+    if (normalizedProvider === 'claude') {
+      return /^claude(?:-|$)/i.test(name);
+    }
+
+    // Codex model IDs use the OpenAI/Codex naming families. Keeping the
+    // allow-list prefix-based also permits newly added gpt/codex models without
+    // requiring a frontend release for every catalog update.
+    return /^(?:gpt(?:-|$)|codex(?:-|$)|o\d+(?:-|$))/i.test(name);
+  });
+}
+
 export interface ModelGroup {
   id: string;
   label: string;

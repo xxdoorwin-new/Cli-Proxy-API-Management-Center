@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { modelsApi } from '@/services/api';
 import { buildHeaderObject } from '@/utils/headers';
 import { getErrorMessage } from '@/utils/helpers';
+import { filterModelsForProvider } from '@/utils/models';
 import type { ModelInfo } from '@/utils/models';
 import type { ApiKeyEntryInput, ProviderBrand } from '../../types';
 
@@ -102,7 +103,7 @@ export function useModelDiscovery(args: UseModelDiscoveryArgs): UseModelDiscover
           }
         }
       }
-      setModels(next ?? []);
+      setModels(filterModelsForProvider(next ?? [], brand));
       setHasFetched(true);
     } catch (err) {
       setModels([]);

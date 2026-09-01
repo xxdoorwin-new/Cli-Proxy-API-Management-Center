@@ -61,10 +61,12 @@ export function UserManagementPage() {
   const [bootstrapDisplayName, setBootstrapDisplayName] = useState('');
   const [bootstrapSaving, setBootstrapSaving] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserPrincipal | null>(null);
+  const [selectedUserRole, setSelectedUserRole] = useState<'user' | 'admin'>('user');
   const [keys, setKeys] = useState<UserAPIKey[]>([]);
   const [configuredKeys, setConfiguredKeys] = useState<ConfiguredAPIKey[]>([]);
   const [selectedConfiguredKey, setSelectedConfiguredKey] = useState('');
   const [models, setModels] = useState('');
+  const [disabledModels, setDisabledModels] = useState('');
   const [quota, setQuota] = useState('0');
   const [quotaSummary, setQuotaSummary] = useState<QuotaSummary | null>(null);
   const [recentUsage, setRecentUsage] = useState<UsageLedgerRow[]>([]);
@@ -240,6 +242,7 @@ export function UserManagementPage() {
 
   const loadUserDetail = async (user: UserPrincipal) => {
     setSelectedUser(user);
+    setSelectedUserRole(user.role === 'admin' ? 'admin' : 'user');
     setRecentUsagePage(1);
     try {
       const [keyRes, configuredRes, modelPolicyRes, quotaPolicyRes] = await Promise.allSettled([
@@ -261,8 +264,10 @@ export function UserManagementPage() {
       if (modelPolicyRes.status === 'fulfilled') {
         const mp = modelPolicyRes.value.model_policy as ModelPolicy;
         setModels(mp.allow_all ? '' : (mp.models ?? []).join(','));
+        setDisabledModels((mp.disabled_models ?? []).join(','));
       } else {
         setModels('');
+        setDisabledModels('');
       }
       if (quotaPolicyRes.status === 'fulfilled') {
         const qp = quotaPolicyRes.value.quota_policy as QuotaPolicy;
@@ -323,9 +328,14 @@ export function UserManagementPage() {
       .filter(Boolean);
     // If no models specified, allow all; otherwise restrict to the listed models.
     const allowAll = list.length === 0;
+    const disabledList = disabledModels
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
     await userAdminApi.setUserModelPolicy(selectedUser.id, {
       allow_all: allowAll,
       models: allowAll ? [] : list,
+      disabled_models: disabledList,
     });
   };
 
@@ -335,6 +345,12 @@ export function UserManagementPage() {
       period: 'monthly',
       limit_credits: Number(quota) || 0,
     });
+  };
+
+  const saveUserRole = async () => {
+    if (!selectedUser) return;
+    const response = await userAdminApi.assignUserRole(selectedUser.id, selectedUserRole);
+    setSelectedUser(response.user);
   };
 
   const savePricingRule = async () => {
@@ -633,6 +649,24 @@ export function UserManagementPage() {
           <div className={styles.value}>{selectedUser.username}</div>
           <div className={styles.muted}>{selectedUser.email}</div>
 
+          <div className={styles.formActions}>
+            <label>
+              <span className={styles.label}>{t('userManagement.userRoleLabel')}</span>
+              <select
+                value={selectedUserRole}
+                onChange={(event) =>
+                  setSelectedUserRole(event.target.value === 'admin' ? 'admin' : 'user')
+                }
+              >
+                <option value="user">{t('userManagement.roleUser')}</option>
+                <option value="admin">{t('userManagement.roleAdmin')}</option>
+              </select>
+            </label>
+            <button type="button" onClick={() => void run(saveUserRole)}>
+              {t('userManagement.actionSaveRole')}
+            </button>
+          </div>
+
           <div className={styles.assignmentLayout}>
             <div className={styles.assignmentSummary}>
               <div className={styles.label}>{t('userManagement.currentAssignment')}</div>
@@ -762,6 +796,18 @@ export function UserManagementPage() {
                 value={models}
                 onChange={(event) => setModels(event.target.value)}
                 placeholder={t('userManagement.allowedModelsHint')}
+              />
+              <button type="button" onClick={() => void run(saveModels)}>
+                {t('userManagement.actionSaveModels')}
+              </button>
+            </div>
+
+            <div className={styles.panel}>
+              <div className={styles.label}>{t('userManagement.disabledModels')}</div>
+              <input
+                value={disabledModels}
+                onChange={(event) => setDisabledModels(event.target.value)}
+                placeholder={t('userManagement.disabledModelsHint')}
               />
               <button type="button" onClick={() => void run(saveModels)}>
                 {t('userManagement.actionSaveModels')}

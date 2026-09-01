@@ -42,6 +42,7 @@ export interface ModelPolicy {
   subject_id: string;
   allow_all: boolean;
   models: string[];
+  disabled_models: string[];
 }
 
 export interface QuotaSummary {
@@ -258,6 +259,9 @@ export const userAdminApi = {
   approveUser: (id: string, role = 'user') =>
     apiClient.post<{ user: UserPrincipal }>(`/v0/management/users/${id}/approve`, { role }),
 
+  assignUserRole: (id: string, role: 'user' | 'admin') =>
+    apiClient.patch<{ user: UserPrincipal }>(`/v0/management/users/${id}/role`, { role }),
+
   rejectUser: (id: string) =>
     apiClient.post<{ user: UserPrincipal }>(`/v0/management/users/${id}/reject`),
 
@@ -317,7 +321,10 @@ export const userAdminApi = {
   getUserModelPolicy: (userID: string) =>
     apiClient.get<{ model_policy: ModelPolicy }>(`/v0/management/users/${userID}/model-policy`),
 
-  setUserModelPolicy: (userID: string, policy: { allow_all: boolean; models: string[] }) =>
+  setUserModelPolicy: (
+    userID: string,
+    policy: { allow_all: boolean; models: string[]; disabled_models: string[] }
+  ) =>
     apiClient.put<{ model_policy: ModelPolicy }>(
       `/v0/management/users/${userID}/model-policy`,
       policy

@@ -336,7 +336,11 @@ export function OAuthPage() {
       const status = getErrorStatus(err);
       const message = getErrorMessage(err);
       const errorMessage =
-        status === 404
+        status === 404 && message === 'unknown or expired state'
+          ? t('auth_login.oauth_callback_state_expired', {
+              defaultValue: 'This OAuth request has expired. Start the login again and submit the new callback URL.'
+            })
+          : status === 404
           ? t('auth_login.oauth_callback_upgrade_hint', {
               defaultValue: 'Please update CLI Proxy API or check the connection.'
             })

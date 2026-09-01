@@ -34,6 +34,14 @@ export function isCodexFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'codex';
 }
 
+// ChatGPT's official Codex usage endpoint requires an OAuth bearer token. A
+// configured codex-api-key can target a third-party upstream and must not be
+// sent to that endpoint as though it were a ChatGPT OAuth credential.
+export function isCodexOAuthFile(file: AuthFileItem): boolean {
+  if (!isCodexFile(file)) return false;
+  return String(file['account_type'] ?? '').trim().toLowerCase() === 'oauth';
+}
+
 export function isKimiFile(file: AuthFileItem): boolean {
   return resolveAuthProvider(file) === 'kimi';
 }

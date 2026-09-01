@@ -1666,6 +1666,8 @@
     "approveRoleLabel": "ロール",
     "roleUser": "ユーザー",
     "roleAdmin": "管理者",
+    "userRoleLabel": "Роль пользователя",
+    "actionSaveRole": "Сохранить роль",
     "colUser": "ユーザー",
     "colEmail": "メールアドレス",
     "colStatus": "ステータス",
